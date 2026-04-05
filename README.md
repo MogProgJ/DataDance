@@ -133,18 +133,23 @@ For the Phase 0 working contract, see [`docs/phase-0-foundation.md`](docs/phase-
 
 ## Running the project
 
-Requires Java 17+ and Gradle.
+Requires Java 17+ and Maven 3.9+.
 
 ```bash
-gradle build       # compile and run all tests
-gradle test         # run tests only
+mvn compile         # compile all sources
+mvn test            # compile and run all tests
 ```
 
-To run a demo:
+To run a demo, use your IDE's main-class runner (e.g. right-click the demo
+class in IntelliJ and choose Run), or from the command line:
 
 ```bash
-gradle run -PmainClass=structlab.demo.ArrayStackDemo
+mvn compile exec:java -Dexec.mainClass=structlab.demo.ArrayStackDemo
 ```
+
+> **Note:** the `exec:java` command requires the `exec-maven-plugin`.  If you
+> prefer not to add it, running demos directly from IntelliJ or any IDE with
+> Maven support works out of the box.
 
 ---
 
