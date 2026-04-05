@@ -53,10 +53,13 @@ a swamp.
 
 ## Project status
 
-> **Phase 1 — Core Data Structure Engine (complete)**
+> **Phase 2 — Trace and Explanation Layer (MVP in progress)**
 >
-> All Phase 1 structures are implemented with tests, demos, invariant checking,
-> and snapshot support.  The project is ready to move into Phase 2 (Trace layer).
+> Phase 1 is complete — all core structures have tests, demos, invariant
+> checking, and snapshot support.  Phase 2 adds an operation-tracing layer
+> that captures before/after state, invariant results, complexity notes, and
+> human-readable explanations for every operation.  An MVP is available for
+> three flagship structures: DynamicArray, ArrayStack, and CircularArrayQueue.
 
 ---
 
@@ -77,6 +80,32 @@ a swamp.
 | Deque | Array deque | `ArrayDequeCustom` | yes | yes |
 | Heap | Binary heap | `BinaryHeap` (on DynamicArray) | yes | yes |
 | Heap | Priority queue | `HeapPriorityQueue` | yes | yes |
+
+---
+
+## Phase 2 — Trace layer (MVP)
+
+The trace layer lives under `src/main/java/structlab/trace/` and provides:
+
+| Class | Purpose |
+|---|---|
+| `TraceStep` | Immutable record capturing one traced operation |
+| `TraceLog` | Ordered collection of `TraceStep` entries |
+| `InvariantResult` | Enum: `PASSED`, `FAILED`, `SKIPPED` |
+| `Traceable` | Interface implemented by traceable structures |
+| `TracedDynamicArray` | Traced wrapper for `DynamicArray` |
+| `TracedArrayStack` | Traced wrapper for `ArrayStack` |
+| `TracedCircularArrayQueue` | Traced wrapper for `CircularArrayQueue` |
+
+Each `TraceStep` captures: structure name, implementation name, operation name,
+input arguments, before-state snapshot, after-state snapshot, invariant result,
+optional complexity note, and a human-readable explanation.
+
+Run a traced demo:
+
+```bash
+mvn compile exec:java -Dexec.mainClass=structlab.demo.TracedDynamicArrayDemo
+```
 
 ---
 

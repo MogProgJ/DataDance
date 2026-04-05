@@ -1,8 +1,9 @@
 package structlab.core.array;
 
 import java.util.Arrays;
+import structlab.trace.Traceable;
 
-public class DynamicArray<T> {
+public class DynamicArray<T> implements Traceable {
   private static final int DEFAULT_CAPACITY = 4;
 
   private Object[] data;
@@ -79,12 +80,24 @@ public class DynamicArray<T> {
     return removed;
   }
 
+  @Override
+  public String structureName() {
+    return "Dynamic Array";
+  }
+
+  @Override
+  public String implementationName() {
+    return "DynamicArray";
+  }
+
+  @Override
   public boolean checkInvariant() {
     return data != null
       && size >= 0
       && size <= data.length;
   }
 
+  @Override
   public String snapshot() {
     StringBuilder sb = new StringBuilder();
 
