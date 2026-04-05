@@ -1,8 +1,9 @@
 package structlab.core.queue;
 
 import structlab.core.stack.ArrayStack;
+import structlab.trace.Traceable;
 
-public class TwoStackQueue<T> {
+public class TwoStackQueue<T> implements Traceable {
   private final ArrayStack<T> inbox;
   private final ArrayStack<T> outbox;
 
@@ -41,10 +42,22 @@ public class TwoStackQueue<T> {
     return outbox.peek();
   }
 
+  @Override
+  public String structureName() {
+    return "Queue";
+  }
+
+  @Override
+  public String implementationName() {
+    return "TwoStackQueue";
+  }
+
+  @Override
   public boolean checkInvariant() {
     return inbox.checkInvariant() && outbox.checkInvariant();
   }
 
+  @Override
   public String snapshot() {
     return "TwoStackQueue{" +
       "size=" + size() +

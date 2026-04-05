@@ -10,7 +10,9 @@
  * <p>Core types: {@link TraceStep}, {@link TraceLog}, {@link InvariantResult},
  * {@link Traceable}.
  *
- * <p>Traced wrappers: {@link TracedDynamicArray}, {@link TracedArrayStack},
- * {@link TracedCircularArrayQueue}.
+ * <p>Traced wrappers: {@link TracedDynamicArray}, {@link TracedFixedArray},
+ * {@link TracedArrayStack}, {@link TracedLinkedStack},
+ * {@link TracedCircularArrayQueue}, {@link TracedLinkedQueue},
+ * {@link TracedTwoStackQueue}.
  */
 package structlab.trace;

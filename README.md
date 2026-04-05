@@ -53,13 +53,14 @@ a swamp.
 
 ## Project status
 
-> **Phase 2 — Trace and Explanation Layer (MVP in progress)**
+> **Phase 2 — Trace and Explanation Layer (complete for arrays, stacks, and queues)**
 >
 > Phase 1 is complete — all core structures have tests, demos, invariant
 > checking, and snapshot support.  Phase 2 adds an operation-tracing layer
 > that captures before/after state, invariant results, complexity notes, and
-> human-readable explanations for every operation.  An MVP is available for
-> three flagship structures: DynamicArray, ArrayStack, and CircularArrayQueue.
+> human-readable explanations for every operation.  All Phase 1 array, stack,
+> and queue structures now have traced wrappers.  Lists, deques, heaps, and
+> hash structures are not yet traced.
 
 ---
 
@@ -83,7 +84,7 @@ a swamp.
 
 ---
 
-## Phase 2 — Trace layer (MVP)
+## Phase 2 — Trace layer
 
 The trace layer lives under `src/main/java/structlab/trace/` and provides:
 
@@ -94,12 +95,21 @@ The trace layer lives under `src/main/java/structlab/trace/` and provides:
 | `InvariantResult` | Enum: `PASSED`, `FAILED`, `SKIPPED` |
 | `Traceable` | Interface implemented by traceable structures |
 | `TracedDynamicArray` | Traced wrapper for `DynamicArray` |
+| `TracedFixedArray` | Traced wrapper for `FixedArray` |
 | `TracedArrayStack` | Traced wrapper for `ArrayStack` |
+| `TracedLinkedStack` | Traced wrapper for `LinkedStack` |
 | `TracedCircularArrayQueue` | Traced wrapper for `CircularArrayQueue` |
+| `TracedLinkedQueue` | Traced wrapper for `LinkedQueue` |
+| `TracedTwoStackQueue` | Traced wrapper for `TwoStackQueue` |
 
 Each `TraceStep` captures: structure name, implementation name, operation name,
 input arguments, before-state snapshot, after-state snapshot, invariant result,
 optional complexity note, and a human-readable explanation.
+
+**Failed-operation policy:** When an operation fails due to a detectable
+precondition (empty stack/queue, full fixed array), the failure is traced as a
+`TraceStep` with a `FAILED:` explanation before the exception propagates.  This
+makes failures visible in the trace log for educational purposes.
 
 Run a traced demo:
 

@@ -1,37 +1,37 @@
 package structlab.trace;
 
-import structlab.core.queue.CircularArrayQueue;
+import structlab.core.queue.LinkedQueue;
 
 /**
- * Traced wrapper around {@link CircularArrayQueue}.  Each operation captures
- * a {@link TraceStep} with before/after snapshots.
+ * Traced wrapper around {@link LinkedQueue}.  Each operation captures a
+ * {@link TraceStep} with before/after snapshots.  Failed operations (e.g.
+ * dequeuing from an empty queue) are also traced before re-throwing.
  */
-public class TracedCircularArrayQueue<T> {
-  private final CircularArrayQueue<T> queue;
+public class TracedLinkedQueue<T> {
+  private final LinkedQueue<T> queue;
   private final TraceLog log;
 
-  public TracedCircularArrayQueue(CircularArrayQueue<T> queue, TraceLog log) {
+  public TracedLinkedQueue(LinkedQueue<T> queue, TraceLog log) {
     this.queue = queue;
     this.log = log;
   }
 
   public void enqueue(T value) {
     String before = queue.snapshot();
-    boolean resized = queue.size() == queue.capacity();
+    boolean wasEmpty = queue.isEmpty();
 
     queue.enqueue(value);
 
     String after = queue.snapshot();
-    String complexity = resized ? "O(n) - resize triggered" : "O(1) amortised";
-    String explanation = resized
-        ? "Enqueued " + value + ". Queue was full, so it doubled capacity and unwrapped the circular layout."
-        : "Enqueued " + value + " at the rear of the queue.";
+    String explanation = wasEmpty
+        ? "Enqueued " + value + ". Queue was empty, so the new node is both front and rear."
+        : "Enqueued " + value + " at the rear. Previous rear now links to the new node.";
 
     log.add(new TraceStep(
         queue.structureName(), queue.implementationName(), "enqueue",
         String.valueOf(value), before, after,
         InvariantResult.fromBoolean(queue.checkInvariant()),
-        complexity, explanation));
+        "O(1)", explanation));
   }
 
   public T dequeue() {
@@ -46,16 +46,19 @@ public class TracedCircularArrayQueue<T> {
       queue.dequeue(); // let it throw
     }
 
+    boolean willBecomeEmpty = queue.size() == 1;
     T value = queue.dequeue();
 
     String after = queue.snapshot();
+    String explanation = willBecomeEmpty
+        ? "Dequeued " + value + " from the front. Queue is now empty; front and rear are null."
+        : "Dequeued " + value + " from the front. Front pointer advanced to the next node.";
 
     log.add(new TraceStep(
         queue.structureName(), queue.implementationName(), "dequeue",
         null, before, after,
         InvariantResult.fromBoolean(queue.checkInvariant()),
-        "O(1)",
-        "Dequeued " + value + " from the front. Front pointer advanced circularly."));
+        "O(1)", explanation));
 
     return value;
   }
@@ -84,7 +87,7 @@ public class TracedCircularArrayQueue<T> {
     return value;
   }
 
-  public CircularArrayQueue<T> unwrap() {
+  public LinkedQueue<T> unwrap() {
     return queue;
   }
 

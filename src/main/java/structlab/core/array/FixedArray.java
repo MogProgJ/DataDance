@@ -1,8 +1,9 @@
 package structlab.core.array;
 
 import java.util.Arrays;
+import structlab.trace.Traceable;
 
-public class FixedArray<T> {
+public class FixedArray<T> implements Traceable {
   private final Object[] data;
   private int size;
 
@@ -84,12 +85,24 @@ public class FixedArray<T> {
     return removed;
   }
 
+  @Override
+  public String structureName() {
+    return "Fixed Array";
+  }
+
+  @Override
+  public String implementationName() {
+    return "FixedArray";
+  }
+
+  @Override
   public boolean checkInvariant() {
     return data != null
       && size >= 0
       && size <= data.length;
   }
 
+  @Override
   public String snapshot() {
     StringBuilder sb = new StringBuilder();
 

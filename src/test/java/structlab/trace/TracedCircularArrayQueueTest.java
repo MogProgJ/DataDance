@@ -66,6 +66,30 @@ class TracedCircularArrayQueueTest {
   }
 
   @Test
+  void dequeueFromEmptyTracesFailureThenThrows() {
+    CircularArrayQueue<Integer> queue = new CircularArrayQueue<>(4);
+    TraceLog log = new TraceLog();
+    TracedCircularArrayQueue<Integer> traced = new TracedCircularArrayQueue<>(queue, log);
+
+    assertThrows(IllegalStateException.class, traced::dequeue);
+
+    assertEquals(1, log.size());
+    assertTrue(log.steps().get(0).explanation().startsWith("FAILED:"));
+  }
+
+  @Test
+  void peekOnEmptyTracesFailureThenThrows() {
+    CircularArrayQueue<Integer> queue = new CircularArrayQueue<>(4);
+    TraceLog log = new TraceLog();
+    TracedCircularArrayQueue<Integer> traced = new TracedCircularArrayQueue<>(queue, log);
+
+    assertThrows(IllegalStateException.class, traced::peek);
+
+    assertEquals(1, log.size());
+    assertTrue(log.steps().get(0).explanation().startsWith("FAILED:"));
+  }
+
+  @Test
   void unwrapReturnsOriginalQueue() {
     CircularArrayQueue<Integer> queue = new CircularArrayQueue<>();
     TracedCircularArrayQueue<Integer> traced = new TracedCircularArrayQueue<>(queue, new TraceLog());

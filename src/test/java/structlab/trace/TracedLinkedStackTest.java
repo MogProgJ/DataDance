@@ -1,17 +1,17 @@
 package structlab.trace;
 
 import org.junit.jupiter.api.Test;
-import structlab.core.stack.ArrayStack;
+import structlab.core.stack.LinkedStack;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class TracedArrayStackTest {
+class TracedLinkedStackTest {
 
   @Test
   void pushProducesTraceStep() {
-    ArrayStack<Integer> stack = new ArrayStack<>();
+    LinkedStack<Integer> stack = new LinkedStack<>();
     TraceLog log = new TraceLog();
-    TracedArrayStack<Integer> traced = new TracedArrayStack<>(stack, log);
+    TracedLinkedStack<Integer> traced = new TracedLinkedStack<>(stack, log);
 
     traced.push(10);
 
@@ -20,13 +20,14 @@ class TracedArrayStackTest {
     assertEquals("push", step.operationName());
     assertEquals("10", step.input());
     assertEquals(InvariantResult.PASSED, step.invariantResult());
+    assertTrue(step.explanation().contains("node"));
   }
 
   @Test
   void popProducesTraceStep() {
-    ArrayStack<Integer> stack = new ArrayStack<>();
+    LinkedStack<Integer> stack = new LinkedStack<>();
     TraceLog log = new TraceLog();
-    TracedArrayStack<Integer> traced = new TracedArrayStack<>(stack, log);
+    TracedLinkedStack<Integer> traced = new TracedLinkedStack<>(stack, log);
 
     traced.push(10);
     int val = traced.pop();
@@ -39,10 +40,24 @@ class TracedArrayStackTest {
   }
 
   @Test
-  void peekDoesNotChangeState() {
-    ArrayStack<Integer> stack = new ArrayStack<>();
+  void popFromEmptyTracesFailureThenThrows() {
+    LinkedStack<Integer> stack = new LinkedStack<>();
     TraceLog log = new TraceLog();
-    TracedArrayStack<Integer> traced = new TracedArrayStack<>(stack, log);
+    TracedLinkedStack<Integer> traced = new TracedLinkedStack<>(stack, log);
+
+    assertThrows(IllegalStateException.class, traced::pop);
+
+    assertEquals(1, log.size());
+    TraceStep failStep = log.steps().get(0);
+    assertTrue(failStep.explanation().startsWith("FAILED:"));
+    assertEquals(failStep.beforeState(), failStep.afterState());
+  }
+
+  @Test
+  void peekDoesNotChangeState() {
+    LinkedStack<Integer> stack = new LinkedStack<>();
+    TraceLog log = new TraceLog();
+    TracedLinkedStack<Integer> traced = new TracedLinkedStack<>(stack, log);
 
     traced.push(42);
     int val = traced.peek();
@@ -54,22 +69,10 @@ class TracedArrayStackTest {
   }
 
   @Test
-  void popFromEmptyTracesFailureThenThrows() {
-    ArrayStack<Integer> stack = new ArrayStack<>();
-    TraceLog log = new TraceLog();
-    TracedArrayStack<Integer> traced = new TracedArrayStack<>(stack, log);
-
-    assertThrows(IllegalStateException.class, traced::pop);
-
-    assertEquals(1, log.size());
-    assertTrue(log.steps().get(0).explanation().startsWith("FAILED:"));
-  }
-
-  @Test
   void peekOnEmptyTracesFailureThenThrows() {
-    ArrayStack<Integer> stack = new ArrayStack<>();
+    LinkedStack<Integer> stack = new LinkedStack<>();
     TraceLog log = new TraceLog();
-    TracedArrayStack<Integer> traced = new TracedArrayStack<>(stack, log);
+    TracedLinkedStack<Integer> traced = new TracedLinkedStack<>(stack, log);
 
     assertThrows(IllegalStateException.class, traced::peek);
 
@@ -79,8 +82,8 @@ class TracedArrayStackTest {
 
   @Test
   void unwrapReturnsOriginalStack() {
-    ArrayStack<Integer> stack = new ArrayStack<>();
-    TracedArrayStack<Integer> traced = new TracedArrayStack<>(stack, new TraceLog());
+    LinkedStack<Integer> stack = new LinkedStack<>();
+    TracedLinkedStack<Integer> traced = new TracedLinkedStack<>(stack, new TraceLog());
     assertSame(stack, traced.unwrap());
   }
 }

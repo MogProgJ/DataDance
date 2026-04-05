@@ -1,16 +1,17 @@
 package structlab.trace;
 
-import structlab.core.stack.ArrayStack;
+import structlab.core.stack.LinkedStack;
 
 /**
- * Traced wrapper around {@link ArrayStack}.  Each operation captures a
- * {@link TraceStep} with before/after snapshots.
+ * Traced wrapper around {@link LinkedStack}.  Each operation captures a
+ * {@link TraceStep} with before/after snapshots.  Failed operations (e.g.
+ * popping from an empty stack) are also traced before re-throwing.
  */
-public class TracedArrayStack<T> {
-  private final ArrayStack<T> stack;
+public class TracedLinkedStack<T> {
+  private final LinkedStack<T> stack;
   private final TraceLog log;
 
-  public TracedArrayStack(ArrayStack<T> stack, TraceLog log) {
+  public TracedLinkedStack(LinkedStack<T> stack, TraceLog log) {
     this.stack = stack;
     this.log = log;
   }
@@ -21,13 +22,12 @@ public class TracedArrayStack<T> {
     stack.push(value);
 
     String after = stack.snapshot();
-
     log.add(new TraceStep(
         stack.structureName(), stack.implementationName(), "push",
         String.valueOf(value), before, after,
         InvariantResult.fromBoolean(stack.checkInvariant()),
-        "O(1) amortised",
-        "Pushed " + value + " onto the top of the stack."));
+        "O(1)",
+        "Pushed " + value + " onto the top. New node points to previous top."));
   }
 
   public T pop() {
@@ -45,13 +45,12 @@ public class TracedArrayStack<T> {
     T value = stack.pop();
 
     String after = stack.snapshot();
-
     log.add(new TraceStep(
         stack.structureName(), stack.implementationName(), "pop",
         null, before, after,
         InvariantResult.fromBoolean(stack.checkInvariant()),
         "O(1)",
-        "Popped " + value + " from the top of the stack."));
+        "Popped " + value + " from the top. Head now points to the next node."));
 
     return value;
   }
@@ -80,7 +79,7 @@ public class TracedArrayStack<T> {
     return value;
   }
 
-  public ArrayStack<T> unwrap() {
+  public LinkedStack<T> unwrap() {
     return stack;
   }
 
