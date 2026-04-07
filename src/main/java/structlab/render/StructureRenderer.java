@@ -41,23 +41,25 @@ public final class StructureRenderer {
     sb.append("\n");
 
     // Logical elements row
-    sb.append("  Logical: ");
     if (elements.isEmpty()) {
-      sb.append("(empty)");
+      sb.append("  Logical: (empty)\n");
     } else {
-      sb.append(boxRow(elements));
+      sb.append("             ").append(topRow(elements)).append("\n");
+      sb.append("  Logical:   ").append(boxRow(elements)).append("\n");
+      sb.append("             ").append(botRow(elements)).append("\n");
     }
-    sb.append("\n");
 
     // Index row for logical
     if (!elements.isEmpty()) {
-      sb.append("  Index:   ").append(indexRow(elements)).append("\n");
+      sb.append("  Index:     ").append(indexRow(elements)).append("\n");
     }
 
     // Backing array row
     if (!raw.isEmpty()) {
-      sb.append("  Backing: ").append(boxRow(raw)).append("\n");
-      sb.append("  Index:   ").append(indexRow(raw)).append("\n");
+      sb.append("             ").append(topRow(raw)).append("\n");
+      sb.append("  Backing:   ").append(boxRow(raw)).append("\n");
+      sb.append("             ").append(botRow(raw)).append("\n");
+      sb.append("  Index:     ").append(indexRow(raw)).append("\n");
     }
 
     return sb.toString();
@@ -87,19 +89,23 @@ public final class StructureRenderer {
 
     if (elements.isEmpty()) {
       sb.append("    (empty)\n");
-      sb.append("    +-------+\n");
-    } else {
-      int cellWidth = maxWidth(elements) + 2;
-      String border = "+" + "-".repeat(cellWidth) + "+";
-      for (int i = elements.size() - 1; i >= 0; i--) {
-        String cell = padCenter(elements.get(i), cellWidth);
-        sb.append("    |").append(cell).append("|");
-        if (i == elements.size() - 1) sb.append(" <-- top");
-        sb.append("\n");
-      }
-      sb.append("    ").append(border).append("\n");
-    }
+        sb.append("    └───────┘\n");
+      } else {
+        int cellWidth = maxWidth(elements) + 2;
+        String border = "    └" + "─".repeat(cellWidth) + "┘\n";
+        String topBorder = "    ┌" + "─".repeat(cellWidth) + "┐\n";
+        String innerBorder = "    ├" + "─".repeat(cellWidth) + "┤\n";
 
+        sb.append(topBorder);
+        for (int i = elements.size() - 1; i >= 0; i--) {
+          String cell = padCenter(elements.get(i), cellWidth);
+          sb.append("    │").append(cell).append("│");
+          if (i == elements.size() - 1) sb.append(" <-- top");
+          sb.append("\n");
+          if (i > 0) sb.append(innerBorder);
+        }
+        sb.append(border);
+      }
     return sb.toString();
   }
 
@@ -131,23 +137,24 @@ public final class StructureRenderer {
     // Buffer row
     if (!raw.isEmpty()) {
       int cellWidth = maxWidth(raw) + 2;
-      int slotWidth = cellWidth + 2; // matches "| " per cell in boxRow
 
-      sb.append("  Buffer:  ").append(boxRow(raw)).append("\n");
-      sb.append("  Index:   ").append(indexRow(raw)).append("\n");
+        sb.append("             ").append(topRow(raw)).append("\n");
+        sb.append("  Buffer:    ").append(boxRow(raw)).append("\n");
+        sb.append("             ").append(botRow(raw)).append("\n");
+        sb.append("  Index:     ").append(indexRow(raw)).append("\n");
 
-      // Marker row showing F and R, aligned to cell centers
-      if (size > 0) {
-        sb.append("  Markers: ");
-        for (int i = 0; i < raw.size(); i++) {
-          String marker = "";
-          if (i == frontIndex && i == rearIndex) marker = "F/R";
-          else if (i == frontIndex) marker = "F";
-          else if (i == rearIndex) marker = "R";
-          sb.append(padCenter(marker, slotWidth));
+        // Marker row showing F and R, aligned to cell centers
+        if (size > 0) {
+          sb.append("  Markers:    ");
+          for (int i = 0; i < raw.size(); i++) {
+            String marker = "";
+            if (i == frontIndex && i == rearIndex) marker = "F/R";
+            else if (i == frontIndex) marker = "F";
+            else if (i == rearIndex) marker = "R";
+            sb.append(padCenter(marker, cellWidth)).append(" ");
+          }
+          sb.append("\n");
         }
-        sb.append("\n");
-      }
     }
 
     // Logical order
@@ -446,22 +453,23 @@ public final class StructureRenderer {
 
     if (!raw.isEmpty()) {
       int cellWidth = maxWidth(raw) + 2;
-      int slotWidth = cellWidth + 2;
 
-      sb.append("  Buffer:  ").append(boxRow(raw)).append("\n");
-      sb.append("  Index:   ").append(indexRow(raw)).append("\n");
+        sb.append("             ").append(topRow(raw)).append("\n");
+        sb.append("  Buffer:    ").append(boxRow(raw)).append("\n");
+        sb.append("             ").append(botRow(raw)).append("\n");
+        sb.append("  Index:     ").append(indexRow(raw)).append("\n");
 
-      if (size > 0) {
-        sb.append("  Markers: ");
-        for (int i = 0; i < raw.size(); i++) {
-          String marker = "";
-          if (i == frontIndex && i == rearIndex) marker = "F/R";
-          else if (i == frontIndex) marker = "F";
-          else if (i == rearIndex) marker = "R";
-          sb.append(padCenter(marker, slotWidth));
+        if (size > 0) {
+          sb.append("  Markers:    "); // 14 spaces prefix for index row equivalence
+          for (int i = 0; i < raw.size(); i++) {
+            String marker = "";
+            if (i == frontIndex && i == rearIndex) marker = "F/R";
+            else if (i == frontIndex) marker = "F";
+            else if (i == rearIndex) marker = "R";
+            sb.append(padCenter(marker, cellWidth)).append(" ");
+          }
+          sb.append("\n");
         }
-        sb.append("\n");
-      }
     }
 
     sb.append("  Logical: ");
@@ -504,8 +512,9 @@ public final class StructureRenderer {
     }
 
     // Array view
-    sb.append("  Array: ").append(boxRow(elements)).append("\n");
-    sb.append("  Index: ").append(indexRow(elements)).append("\n");
+      sb.append("         ").append(topRow(elements)).append("\n");
+      sb.append("  Array: ").append(boxRow(elements)).append("\n");
+      sb.append("         ").append(botRow(elements)).append("\n");
 
     // Tree-level view
     sb.append("  Tree:\n");
@@ -584,43 +593,70 @@ public final class StructureRenderer {
 
   // ---- Helpers ----
 
-  /** Builds a boxed row like "| 10 | 20 | null |" */
-  static String boxRow(List<String> items) {
-    int cellWidth = maxWidth(items) + 2;
-    StringBuilder sb = new StringBuilder();
-    for (String item : items) {
-      sb.append("| ").append(padRight(item, cellWidth - 2)).append(" ");
+    /** Builds a top border for a multi-line boxed row like "┌────┬────┐" */
+    static String topRow(List<String> items) {
+      if (items.isEmpty()) return "";
+      int cellWidth = maxWidth(items) + 2;
+      StringBuilder sb = new StringBuilder();
+      sb.append("┌");
+      for (int i = 0; i < items.size(); i++) {
+        sb.append("─".repeat(cellWidth));
+        sb.append(i < items.size() - 1 ? "┬" : "┐");
+      }
+      return sb.toString();
     }
-    sb.append("|");
-    return sb.toString();
-  }
 
-  /**
-   * Builds an index row aligned to the center of each boxed cell.
-   * Each cell occupies (cellWidth + 2) characters: "| " + content + " ".
-   * The final "|" is one extra character.
-   */
-  static String indexRow(List<String> items) {
-    int cellWidth = maxWidth(items) + 2;
-    int slotWidth = cellWidth + 2; // "| " prefix per cell
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < items.size(); i++) {
-      String idx = String.valueOf(i);
-      sb.append(padCenter(idx, slotWidth));
+    /** Builds the middle content for a boxed row like "│ 10 │ 20 │" */
+    static String boxRow(List<String> items) {
+      if (items.isEmpty()) return "(empty)";
+      int cellWidth = maxWidth(items) + 2;
+      StringBuilder sb = new StringBuilder();
+      sb.append("│");
+      for (String item : items) {
+        sb.append(" ").append(padLeftSpace(item, cellWidth - 2)).append(" │");
+      }
+      return sb.toString();
     }
-    return sb.toString();
-  }
 
-  static int maxWidth(List<String> items) {
-    int max = 1;
-    for (String item : items) max = Math.max(max, item.length());
-    return max;
-  }
+    /** Builds a bottom border for a multi-line boxed row like "└────┴────┘" */
+    static String botRow(List<String> items) {
+      if (items.isEmpty()) return "";
+      int cellWidth = maxWidth(items) + 2;
+      StringBuilder sb = new StringBuilder();
+      sb.append("└");
+      for (int i = 0; i < items.size(); i++) {
+        sb.append("─".repeat(cellWidth));
+        sb.append(i < items.size() - 1 ? "┴" : "┘");
+      }
+      return sb.toString();
+    }
 
-  static String padRight(String s, int width) {
-    return s.length() >= width ? s : s + " ".repeat(width - s.length());
-  }
+    /** Builds an index row aligned to the center of each boxed cell. */
+    static String indexRow(List<String> items) {
+      if (items.isEmpty()) return "";
+      int cellWidth = maxWidth(items) + 2;
+      StringBuilder sb = new StringBuilder();
+      sb.append(" ");
+      for (int i = 0; i < items.size(); i++) {
+        String idx = String.valueOf(i);
+        sb.append(padCenter(idx, cellWidth)).append(" ");
+      }
+      return sb.toString();
+    }
 
+    static int maxWidth(List<String> items) {
+      int max = 1;
+      for (String item : items) max = Math.max(max, item.length());
+      return max;
+    }
+
+    static String padRight(String s, int width) {
+      return s.length() >= width ? s : s + " ".repeat(width - s.length());
+    }
+
+    static String padLeftSpace(String s, int width) {
+      return s.length() >= width ? s : " ".repeat((width - s.length()) / 2) + s + " ".repeat(width - s.length() - (width - s.length()) / 2);
+    }
   static String padCenter(String s, int width) {
     if (s.length() >= width) return s;
     int left = (width - s.length()) / 2;
