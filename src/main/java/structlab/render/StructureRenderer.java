@@ -325,6 +325,242 @@ public final class StructureRenderer {
   }
 
   /**
+   * Renders a SinglyLinkedList snapshot as a chain with head/tail markers.
+   *
+   * Example output:
+   *   SinglyLinkedList  size: 3  head: 10  tail: 30
+   *   head -> [10] -> [20] -> [30] -> null
+   *                            ^
+   *                           tail
+   */
+  public static String renderSinglyLinkedList(String snapshot) {
+    int size = SnapshotParser.intField(snapshot, "size");
+    String head = SnapshotParser.stringField(snapshot, "head");
+    String tail = SnapshotParser.stringField(snapshot, "tail");
+    List<String> chain = SnapshotParser.chainField(snapshot, "chain");
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("  SinglyLinkedList  size: ").append(size)
+      .append("  head: ").append(head)
+      .append("  tail: ").append(tail).append("\n");
+
+    sb.append("  head -> ");
+    if (chain.isEmpty()) {
+      sb.append("null");
+    } else {
+      for (String node : chain) {
+        sb.append("[").append(node).append("] -> ");
+      }
+      sb.append("null");
+    }
+    sb.append("\n");
+
+    // Tail marker under last node (only when multiple nodes)
+    if (chain.size() > 1) {
+      String prefix = "  head -> ";
+      int tailStart = prefix.length();
+      for (int j = 0; j < chain.size() - 1; j++) {
+        tailStart += chain.get(j).length() + 2 + 4; // [val] + " -> "
+      }
+      int tailCenter = tailStart + chain.get(chain.size() - 1).length() / 2 + 1;
+
+      StringBuilder carets = new StringBuilder();
+      for (int i = 0; i < tailCenter + 1; i++) carets.append(' ');
+      carets.setCharAt(tailCenter, '^');
+      sb.append(carets).append("\n");
+
+      StringBuilder labels = new StringBuilder();
+      String tailLabel = "tail";
+      int labelStart = Math.max(0, tailCenter - tailLabel.length() / 2);
+      for (int i = 0; i < labelStart + tailLabel.length(); i++) labels.append(' ');
+      for (int i = 0; i < tailLabel.length(); i++) labels.setCharAt(labelStart + i, tailLabel.charAt(i));
+      sb.append(labels).append("\n");
+    }
+
+    return sb.toString();
+  }
+
+  /**
+   * Renders a DoublyLinkedList snapshot with bidirectional links.
+   *
+   * Example output:
+   *   DoublyLinkedList  size: 3  head: 10  tail: 30
+   *   null <-- [10] <--> [20] <--> [30] --> null
+   *             ^                   ^
+   *            head                tail
+   */
+  public static String renderDoublyLinkedList(String snapshot) {
+    int size = SnapshotParser.intField(snapshot, "size");
+    String head = SnapshotParser.stringField(snapshot, "head");
+    String tail = SnapshotParser.stringField(snapshot, "tail");
+    List<String> chain = SnapshotParser.doublyLinkedChainField(snapshot, "chain");
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("  DoublyLinkedList  size: ").append(size)
+      .append("  head: ").append(head)
+      .append("  tail: ").append(tail).append("\n");
+
+    return appendDoublyLinkedChain(sb, chain, "head", "tail");
+  }
+
+  /**
+   * Renders a LinkedDeque snapshot with front/rear markers.
+   *
+   * Example output:
+   *   LinkedDeque  size: 3  front: 10  rear: 30
+   *   null <-- [10] <--> [20] <--> [30] --> null
+   *             ^                   ^
+   *            front               rear
+   */
+  public static String renderLinkedDeque(String snapshot) {
+    int size = SnapshotParser.intField(snapshot, "size");
+    String front = SnapshotParser.stringField(snapshot, "front");
+    String rear = SnapshotParser.stringField(snapshot, "rear");
+    List<String> chain = SnapshotParser.doublyLinkedChainField(snapshot, "chain");
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("  LinkedDeque  size: ").append(size)
+      .append("  front: ").append(front)
+      .append("  rear: ").append(rear).append("\n");
+
+    return appendDoublyLinkedChain(sb, chain, "front", "rear");
+  }
+
+  /**
+   * Renders an ArrayDequeCustom snapshot with circular buffer, F/R markers.
+   * Very similar to CircularArrayQueue rendering.
+   */
+  public static String renderArrayDeque(String snapshot) {
+    int size = SnapshotParser.intField(snapshot, "size");
+    int capacity = SnapshotParser.intField(snapshot, "capacity");
+    int frontIndex = SnapshotParser.intField(snapshot, "frontIndex");
+    List<String> logical = SnapshotParser.listField(snapshot, "logical");
+    List<String> raw = SnapshotParser.listField(snapshot, "raw");
+
+    int rearIndex = size > 0 ? (frontIndex + size - 1) % capacity : -1;
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("  ArrayDequeCustom  size: ").append(size)
+      .append("  capacity: ").append(capacity)
+      .append("  front: idx ").append(frontIndex).append("\n");
+
+    if (!raw.isEmpty()) {
+      int cellWidth = maxWidth(raw) + 2;
+      int slotWidth = cellWidth + 2;
+
+      sb.append("  Buffer:  ").append(boxRow(raw)).append("\n");
+      sb.append("  Index:   ").append(indexRow(raw)).append("\n");
+
+      if (size > 0) {
+        sb.append("  Markers: ");
+        for (int i = 0; i < raw.size(); i++) {
+          String marker = "";
+          if (i == frontIndex && i == rearIndex) marker = "F/R";
+          else if (i == frontIndex) marker = "F";
+          else if (i == rearIndex) marker = "R";
+          sb.append(padCenter(marker, slotWidth));
+        }
+        sb.append("\n");
+      }
+    }
+
+    sb.append("  Logical: ");
+    if (logical.isEmpty()) {
+      sb.append("(empty)");
+    } else {
+      sb.append(String.join(" -> ", logical));
+    }
+    sb.append("\n");
+
+    return sb.toString();
+  }
+
+  /**
+   * Renders a BinaryHeap snapshot with array view and tree-level view.
+   *
+   * Example output:
+   *   BinaryHeap  size: 5  min: 1
+   *   Array: | 1 | 3 | 2 | 7 | 4 |
+   *   Index:   0   1   2   3   4
+   *   Tree:
+   *     Level 0:         1
+   *     Level 1:      3     2
+   *     Level 2:    7   4
+   */
+  public static String renderBinaryHeap(String snapshot) {
+    int size = SnapshotParser.intField(snapshot, "size");
+    String min = SnapshotParser.stringField(snapshot, "min");
+
+    String dynSnap = SnapshotParser.embeddedSnapshot(snapshot, "elements");
+    List<String> elements = SnapshotParser.listField(dynSnap, "elements");
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("  BinaryHeap  size: ").append(size)
+      .append("  min: ").append(min).append("\n");
+
+    if (elements.isEmpty()) {
+      sb.append("  (empty)\n");
+      return sb.toString();
+    }
+
+    // Array view
+    sb.append("  Array: ").append(boxRow(elements)).append("\n");
+    sb.append("  Index: ").append(indexRow(elements)).append("\n");
+
+    // Tree-level view
+    sb.append("  Tree:\n");
+    int level = 0;
+    int idx = 0;
+    int totalLevels = 0;
+    int temp = elements.size();
+    while (temp > 0) { totalLevels++; temp = (temp - 1) / 2; }
+
+    while (idx < elements.size()) {
+      int nodesAtLevel = 1 << level; // 2^level
+      int indent = Math.max(1, (1 << (totalLevels - level)) - 1);
+      int spacing = Math.max(1, (1 << (totalLevels - level + 1)) - 1);
+
+      sb.append("    Level ").append(level).append(": ");
+      sb.append(" ".repeat(indent));
+      for (int i = 0; i < nodesAtLevel && idx < elements.size(); i++) {
+        if (i > 0) sb.append(" ".repeat(spacing));
+        sb.append(elements.get(idx));
+        idx++;
+      }
+      sb.append("\n");
+      level++;
+    }
+
+    return sb.toString();
+  }
+
+  /**
+   * Renders a HeapPriorityQueue snapshot, showing priority info
+   * and delegating to the embedded BinaryHeap rendering.
+   */
+  public static String renderHeapPriorityQueue(String snapshot) {
+    int size = SnapshotParser.intField(snapshot, "size");
+    String front = SnapshotParser.stringField(snapshot, "front");
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("  HeapPriorityQueue  size: ").append(size)
+      .append("  front: ").append(front).append("\n");
+    sb.append("  (backed by BinaryHeap)\n");
+
+    String heapSnap = SnapshotParser.embeddedSnapshot(snapshot, "heap");
+    if (!heapSnap.isEmpty()) {
+      // Render the embedded heap, stripping its header (first line)
+      String heapRendered = renderBinaryHeap(heapSnap);
+      String[] lines = heapRendered.split("\n");
+      for (int i = 1; i < lines.length; i++) {
+        sb.append(lines[i]).append("\n");
+      }
+    }
+
+    return sb.toString();
+  }
+
+  /**
    * Dispatches to the appropriate renderer based on the snapshot type prefix.
    */
   public static String render(String snapshot) {
@@ -336,6 +572,12 @@ public final class StructureRenderer {
       case "LinkedStack" -> renderLinkedStack(snapshot);
       case "LinkedQueue" -> renderLinkedQueue(snapshot);
       case "TwoStackQueue" -> renderTwoStackQueue(snapshot);
+      case "SinglyLinkedList" -> renderSinglyLinkedList(snapshot);
+      case "DoublyLinkedList" -> renderDoublyLinkedList(snapshot);
+      case "LinkedDeque" -> renderLinkedDeque(snapshot);
+      case "ArrayDequeCustom" -> renderArrayDeque(snapshot);
+      case "BinaryHeap" -> renderBinaryHeap(snapshot);
+      case "HeapPriorityQueue" -> renderHeapPriorityQueue(snapshot);
       default -> "  " + snapshot + "\n";
     };
   }
@@ -384,6 +626,75 @@ public final class StructureRenderer {
     int left = (width - s.length()) / 2;
     int right = width - s.length() - left;
     return " ".repeat(left) + s + " ".repeat(right);
+  }
+
+  /**
+   * Appends a doubly-linked chain rendering with markers for first/last node.
+   * Used by DoublyLinkedList and LinkedDeque.
+   */
+  private static String appendDoublyLinkedChain(StringBuilder sb,
+      List<String> chain, String firstLabel, String lastLabel) {
+    sb.append("  ");
+    if (chain.isEmpty()) {
+      sb.append("(empty)\n");
+      return sb.toString();
+    }
+
+    // Build chain: null <-- [10] <--> [20] <--> [30] --> null
+    String prefix = "null <-- ";
+    sb.append(prefix);
+    for (int i = 0; i < chain.size(); i++) {
+      sb.append("[").append(chain.get(i)).append("]");
+      if (i < chain.size() - 1) sb.append(" <--> ");
+    }
+    sb.append(" --> null\n");
+
+    // Markers under first and last node
+    if (chain.size() >= 1) {
+      int startOffset = 2 + prefix.length(); // "  " + "null <-- "
+      int firstCenter = startOffset + chain.get(0).length() / 2 + 1; // center of [val]
+      int lastStart = startOffset;
+      for (int j = 0; j < chain.size() - 1; j++) {
+        lastStart += chain.get(j).length() + 2 + 6; // [val] + " <--> "
+      }
+      int lastCenter = lastStart + chain.get(chain.size() - 1).length() / 2 + 1;
+
+      if (chain.size() == 1) {
+        // Single node: show both labels centered
+        StringBuilder carets = new StringBuilder();
+        for (int i = 0; i < firstCenter + 1; i++) carets.append(' ');
+        carets.setCharAt(firstCenter, '^');
+        sb.append(carets).append("\n");
+
+        String label = firstLabel + "/" + lastLabel;
+        int labelStart = Math.max(0, firstCenter - label.length() / 2);
+        StringBuilder labels = new StringBuilder();
+        for (int i = 0; i < labelStart + label.length(); i++) labels.append(' ');
+        for (int i = 0; i < label.length(); i++) labels.setCharAt(labelStart + i, label.charAt(i));
+        sb.append(labels).append("\n");
+      } else {
+        // Caret line
+        StringBuilder carets = new StringBuilder();
+        for (int i = 0; i < Math.max(firstCenter, lastCenter) + 1; i++) carets.append(' ');
+        carets.setCharAt(firstCenter, '^');
+        carets.setCharAt(lastCenter, '^');
+        sb.append(carets).append("\n");
+
+        // Label line
+        int firstLabelStart = Math.max(0, firstCenter - firstLabel.length() / 2);
+        int lastLabelStart = Math.max(0, lastCenter - lastLabel.length() / 2);
+        if (lastLabelStart < firstLabelStart + firstLabel.length() + 1) {
+          lastLabelStart = firstLabelStart + firstLabel.length() + 1;
+        }
+        StringBuilder labels = new StringBuilder();
+        for (int i = 0; i < lastLabelStart + lastLabel.length(); i++) labels.append(' ');
+        for (int i = 0; i < firstLabel.length(); i++) labels.setCharAt(firstLabelStart + i, firstLabel.charAt(i));
+        for (int i = 0; i < lastLabel.length(); i++) labels.setCharAt(lastLabelStart + i, lastLabel.charAt(i));
+        sb.append(labels).append("\n");
+      }
+    }
+
+    return sb.toString();
   }
 
   /** Builds vertical stack lines for TwoStackQueue rendering. */

@@ -53,14 +53,13 @@ a swamp.
 
 ## Project status
 
-> **Phase 3 — Console Rendering Layer (complete for arrays, stacks, and queues)**
+> **Phase 3 — Console Rendering Layer (complete for arrays, stacks, queues, lists, deques, heaps)**
 >
-> Phases 1 and 2 are complete for arrays, stacks, and queues.  Phase 3 adds
-> a console rendering layer that turns trace output into structure-aware
-> ASCII visualizations with markers (`top`, `front`, `rear`, `F`, `R`),
-> boxed array cells, vertical stack views, linked-node chains, and
-> side-by-side before/after transition views.  Lists, deques, heaps, and
-> hash structures are not yet traced or rendered.
+> Phases 1–3 are complete for arrays, stacks, queues, lists, deques, and
+> heaps/priority queues.  Each traced structure has structure-aware ASCII
+> rendering with markers, boxed cells, node chains, tree-level views,
+> and before/after transition display.  Hash structures are not yet
+> traced or rendered.
 
 ---
 
@@ -75,12 +74,12 @@ a swamp.
 | Queue | Circular array queue | `CircularArrayQueue` | yes | yes | yes |
 | Queue | Linked queue | `LinkedQueue` | yes | yes | yes |
 | Queue | Two-stack queue | `TwoStackQueue` | yes | yes | yes |
-| List | Singly linked list | `SinglyLinkedList` | yes | — | — |
-| List | Doubly linked list | `DoublyLinkedList` | yes | — | — |
-| Deque | Linked deque | `LinkedDeque` | yes | — | — |
-| Deque | Array deque | `ArrayDequeCustom` | yes | — | — |
-| Heap | Binary heap | `BinaryHeap` (on DynamicArray) | yes | — | — |
-| Heap | Priority queue | `HeapPriorityQueue` | yes | — | — |
+| List | Singly linked list | `SinglyLinkedList` | yes | yes | yes |
+| List | Doubly linked list | `DoublyLinkedList` | yes | yes | yes |
+| Deque | Linked deque | `LinkedDeque` | yes | yes | yes |
+| Deque | Array deque | `ArrayDequeCustom` | yes | yes | yes |
+| Heap | Binary heap | `BinaryHeap` (on DynamicArray) | yes | yes | yes |
+| Heap | Priority queue | `HeapPriorityQueue` | yes | yes | yes |
 
 ---
 
@@ -101,6 +100,12 @@ The trace layer lives under `src/main/java/structlab/trace/` and provides:
 | `TracedCircularArrayQueue` | Traced wrapper for `CircularArrayQueue` |
 | `TracedLinkedQueue` | Traced wrapper for `LinkedQueue` |
 | `TracedTwoStackQueue` | Traced wrapper for `TwoStackQueue` |
+| `TracedSinglyLinkedList` | Traced wrapper for `SinglyLinkedList` |
+| `TracedDoublyLinkedList` | Traced wrapper for `DoublyLinkedList` |
+| `TracedLinkedDeque` | Traced wrapper for `LinkedDeque` |
+| `TracedArrayDequeCustom` | Traced wrapper for `ArrayDequeCustom` |
+| `TracedBinaryHeap` | Traced wrapper for `BinaryHeap` |
+| `TracedHeapPriorityQueue` | Traced wrapper for `HeapPriorityQueue` |
 
 Each `TraceStep` captures: structure name, implementation name, operation name,
 input arguments, before-state snapshot, after-state snapshot, invariant result,
@@ -139,8 +144,14 @@ Rendered structures include visual markers and layout cues:
 | LinkedStack | Node chain: `top -> [30] -> [20] -> null` |
 | LinkedQueue | Node chain with `front`/`rear` pointer markers |
 | TwoStackQueue | Side-by-side inbox/outbox stacks, effective queue order |
+| SinglyLinkedList | Node chain with `head`/`tail` markers |
+| DoublyLinkedList | Bidirectional chain (`<-->`) with `head`/`tail` markers |
+| LinkedDeque | Bidirectional chain with `front`/`rear` markers |
+| ArrayDequeCustom | Circular buffer with `F`/`R` markers, logical order |
+| BinaryHeap | Array view plus tree-level view showing parent/child layout |
+| HeapPriorityQueue | Priority info with underlying heap array and tree view |
 
-All traced demos now use `ConsoleTraceRenderer` for polished terminal output.
+All traced demos use `ConsoleTraceRenderer` for polished terminal output.
 
 ---
 
