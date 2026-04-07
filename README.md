@@ -53,9 +53,17 @@ a swamp.
 
 ## Project status
 
-> **Phase 5 — Terminal Simulator Foundation (complete)**`n>`n> Phases 1–4 are complete for arrays, stacks, queues, lists, deques, and heaps.`n> A solid terminal simulator backend (Phase 5) is now implemented.`n> Operations are fully interactive using integer elements.`n> GUI work is intended next, but not implemented yet.`n>`n> *Current limitations:*`n> - Terminal simulator still being refined.`n> - Failure/trace/history semantics are intentionally educational.`n> - Hash structures not fully interactive yet.`n> - Comparison mode not yet built.
-> and before/after transition display.  Hash structures are not yet
-> traced or rendered.
+> **Phase 5 â€” Terminal Simulator Foundation (complete)**
+>
+> Phases 1â€“4 are complete for arrays, stacks, queues, lists, deques, and heaps.
+> A solid terminal simulator backend (Phase 5) is now implemented.
+> Operations are fully interactive using integer elements.
+> Phase 6 introduces a JavaFX GUI shell backed by a clean service facade.
+>
+> *Current limitations:*
+> - Hash structures not fully interactive yet.
+> - Comparison mode not yet built.
+> - GUI is an early skeleton; full visualisation is future work.
 
 ---
 
@@ -190,9 +198,9 @@ layer boundaries.
 | 3 | Console rendering layer |
 | 4 | Data structure registry and metadata system |
 | 5 | Terminal interactive simulator |
-| 6 | Broader data structure family |
-| 7 | Comparison mode (same ops on multiple implementations) |
-| 8 | Graphical simulator layer (JavaFX) |
+| 6 | JavaFX GUI shell and service layer |
+| 7 | Broader data structure family |
+| 8 | Comparison mode (same ops on multiple implementations) |
 | 9 | Algorithm demonstrations on top of structures |
 | 10 | Polish, testing, and educational refinement |
 
