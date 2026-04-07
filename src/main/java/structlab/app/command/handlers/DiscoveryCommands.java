@@ -30,8 +30,7 @@ public class DiscoveryCommands {
         CommandHandler clearHandler = new CommandHandler() {
             @Override
             public CommandResult execute(CommandContext context, ParsedCommand command) {
-                // Return an instruction to clear the console output (by printing standard ANSI clear codes)
-                return CommandResult.ok("\033[H\033[2J");
+                return CommandResult.clear();
             }
             @Override
             public String getDescription() { return "Clear the terminal screen"; }

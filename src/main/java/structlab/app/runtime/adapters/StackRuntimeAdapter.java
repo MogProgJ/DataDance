@@ -21,7 +21,7 @@ public class StackRuntimeAdapter extends AbstractRuntimeAdapter {
         return List.of(
                 new OperationDescriptor("push", List.of(), "Push an element onto the stack", 1, "push <value>", true, "push <value>", "O(1)"),
                 new OperationDescriptor("pop", List.of(), "Pop an element off the stack", 0, "pop", true, "pop", "O(1)"),
-                new OperationDescriptor("peek", List.of(), "Look at the top element without removing it", 0, "peek", false, "peek", "O(1)")
+                new OperationDescriptor("peek", List.of("top"), "Look at the top element without removing it", 0, "peek", false, "peek", "O(1)")
         );
     }
 
@@ -48,6 +48,7 @@ public class StackRuntimeAdapter extends AbstractRuntimeAdapter {
                     }
                     break;
                 case "peek":
+                case "top":
                     if (activeStack instanceof TracedArrayStack tas) {
                         return success("peek", tas.peek(), tas.traceLog());
                     } else if (activeStack instanceof TracedLinkedStack tls) {
@@ -58,7 +59,10 @@ public class StackRuntimeAdapter extends AbstractRuntimeAdapter {
                     throw new UnsupportedOperationException("Unknown stack operation: " + operation);
             }
         } catch (Exception e) {
-            return error(operation, e);
+            structlab.trace.TraceLog tl = null;
+            if (activeStack instanceof TracedArrayStack tas) tl = tas.traceLog();
+            else if (activeStack instanceof TracedLinkedStack tls) tl = tls.traceLog();
+            return error(operation, e, tl);
         }
         return error(operation, new IllegalStateException("Invalid active stack state"));
     }

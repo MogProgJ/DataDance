@@ -86,7 +86,7 @@ public class ListRuntimeAdapter extends AbstractRuntimeAdapter {
                     throw new UnsupportedOperationException("Unknown list operation: " + operation);
             }
         } catch (Exception e) {
-            return error(operation, e);
+            return error(operation, e, getTraceLogFrom(activeList));
         }
         return error(operation, new IllegalStateException("Invalid active list state"));
     }
@@ -119,3 +119,7 @@ public class ListRuntimeAdapter extends AbstractRuntimeAdapter {
         clearTraceHistory();
     }
 }
+
+
+
+

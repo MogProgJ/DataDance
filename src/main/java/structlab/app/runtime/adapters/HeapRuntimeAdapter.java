@@ -68,7 +68,7 @@ public class HeapRuntimeAdapter extends AbstractRuntimeAdapter {
                     throw new UnsupportedOperationException("Unknown heap operation: " + operation);
             }
         } catch (Exception e) {
-            return error(operation, e);
+            return error(operation, e, getTraceLogFrom(activeHeap));
         }
         return error(operation, new IllegalStateException("Invalid active heap state"));
     }
@@ -115,3 +115,7 @@ public class HeapRuntimeAdapter extends AbstractRuntimeAdapter {
         clearTraceHistory();
     }
 }
+
+
+
+

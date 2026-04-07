@@ -75,7 +75,7 @@ public class ArrayRuntimeAdapter extends AbstractRuntimeAdapter {
                     throw new UnsupportedOperationException("Unknown array operation: " + operation);
             }
         } catch (Exception e) {
-            return error(operation, e);
+            return error(operation, e, getTraceLogFrom(activeArray));
         }
         return error(operation, new IllegalStateException("Invalid active array state"));
     }
@@ -108,3 +108,7 @@ public class ArrayRuntimeAdapter extends AbstractRuntimeAdapter {
         clearTraceHistory();
     }
 }
+
+
+
+

@@ -86,7 +86,7 @@ public class DequeRuntimeAdapter extends AbstractRuntimeAdapter {
                     throw new UnsupportedOperationException("Unknown deque operation: " + operation);
             }
         } catch (Exception e) {
-            return error(operation, e);
+            return error(operation, e, getTraceLogFrom(activeDeque));
         }
         return error(operation, new IllegalStateException("Invalid active deque state"));
     }
@@ -119,3 +119,7 @@ public class DequeRuntimeAdapter extends AbstractRuntimeAdapter {
         clearTraceHistory();
     }
 }
+
+
+
+

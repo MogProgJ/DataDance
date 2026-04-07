@@ -99,7 +99,7 @@ public class SessionCommands {
                 ActiveStructureSession ass = context.sessionManager().getActiveStructureSession().get();
                 var hist = ass.getHistory();
                 if (hist.isEmpty()) {
-                    return CommandResult.ok(TerminalFormatter.infoBox("History", "No operations executed yet."));
+                    return CommandResult.success("History", "No operations executed yet.");
                 }
                 StringBuilder sb = new StringBuilder();
                 for (int i = 0; i < hist.size(); i++) {
@@ -113,7 +113,7 @@ public class SessionCommands {
                     }
                     sb.append("\n");
                 }
-                return CommandResult.ok(TerminalFormatter.boxText("Execution Timeline", sb.toString().trim(), structlab.app.ui.TerminalTheme.CYAN));
+                return CommandResult.success("Execution Timeline", sb.toString().trim());
             }
             @Override
             public String getDescription() { return "View the timeline of all executed operations"; }
@@ -130,18 +130,18 @@ public class SessionCommands {
                 ActiveStructureSession ass = context.sessionManager().getActiveStructureSession().get();
                 var lastResultOpt = ass.getLastResult();
                 if (lastResultOpt.isEmpty()) {
-                    return CommandResult.ok(TerminalFormatter.infoBox("Trace", "No traces available."));
+                    return CommandResult.success("Trace", "No traces available.");
                 }
                 var lastResult = lastResultOpt.get();
                 if (lastResult.traceSteps() == null || lastResult.traceSteps().isEmpty()) {
-                    return CommandResult.ok(TerminalFormatter.infoBox("Trace required", "No rigorous trace steps captured for last operation."));
+                    return CommandResult.success("Trace required", "No rigorous trace steps captured for last operation.");
                 }
 
                 StringBuilder sb = new StringBuilder();
                 for (var step : lastResult.traceSteps()) {
                     sb.append(structlab.render.ConsoleTraceRenderer.render(step)).append("\n");
                 }
-                return CommandResult.ok(sb.toString().trim());
+                return CommandResult.plain(sb.toString().trim());
             }
             @Override
             public String getDescription() { return "Print the full internal trace of the last executed operation"; }
@@ -159,11 +159,11 @@ public class SessionCommands {
                 ass.clearHistory();
 
                 StringBuilder sb = new StringBuilder();
-                sb.append(TerminalFormatter.successBox("Reset Successful", "Live structure has been reset to an empty state."));
-                sb.append("\n");
-                sb.append(TerminalFormatter.boxText("Current State", ass.getRuntime().renderCurrentState(), structlab.app.ui.TerminalTheme.GREEN));
+                sb.append("Live structure has been reset to an empty state.");
+                sb.append("\n\nCurrent State:\n");
+                sb.append(ass.getRuntime().renderCurrentState());
 
-                return CommandResult.ok(sb.toString());
+                return CommandResult.success("Reset Successful", sb.toString());
             }
             @Override
             public String getDescription() { return "Reset the live structure to its initial empty state and clear history"; }
@@ -178,11 +178,11 @@ public class SessionCommands {
                     return CommandResult.error("Session Error", "No active session.");
                 }
                 ActiveStructureSession ass = context.sessionManager().getActiveStructureSession().get();
-                java.util.Map<String, String> info = new java.util.LinkedHashMap<>();
-                info.put("Active Structure", ass.getStructureId());
-                info.put("Implementation", ass.getImplementationId());
-                info.put("Operations count", String.valueOf(ass.historySize()));
-                return CommandResult.ok(TerminalFormatter.keyValueBlock("Session Info", info));
+                StringBuilder sb = new StringBuilder();
+                sb.append("Active Structure: ").append(ass.getStructureId()).append("\n");
+                sb.append("Implementation:   ").append(ass.getImplementationId()).append("\n");
+                sb.append("Operations count: ").append(ass.historySize()).append("\n");
+                return CommandResult.success("Session Info", sb.toString().trim());
             }
             @Override
             public String getDescription() { return "Shows info about the current session"; }
@@ -198,15 +198,23 @@ public class SessionCommands {
                 ActiveStructureSession ass = context.sessionManager().getActiveStructureSession().get();
                 var lastOpt = ass.getLastResult();
                 if (lastOpt.isEmpty()) {
-                    return CommandResult.ok(TerminalFormatter.infoBox("Last Result", "No operations executed yet."));
+                    return CommandResult.success("Last Result", "No operations executed yet.");
                 }
                 var last = lastOpt.get();
                 java.util.Map<String, String> info = new java.util.LinkedHashMap<>();
                 info.put("Operation", last.operationName());
                 info.put("Status", last.success() ? "Success" : "Failed");
-                info.put("Returned", last.returnedValue() != null ? last.returnedValue() : "null");
-                info.put("Message", last.message() != null ? last.message() : "none");
-                return CommandResult.ok(TerminalFormatter.keyValueBlock("Last Operation Summary", info));
+                if (last.returnedValue() != null && !last.returnedValue().equals("null")) {
+                    info.put("Returned", last.returnedValue());
+                }
+                if (last.message() != null) {
+                    info.put("Message", last.message());
+                }
+                int steps = last.traceSteps() == null ? 0 : last.traceSteps().size();
+                info.put("Trace Steps", steps > 0 ? steps + " steps recorded" : "None");
+                StringBuilder sb = new StringBuilder();
+                info.forEach((k, v) -> sb.append(k).append(": ").append(v).append("\n"));
+                return CommandResult.success("Last Operation Summary", sb.toString().trim());
             }
             @Override
             public String getDescription() { return "Shows summary of the most recently executed operation"; }
@@ -220,7 +228,7 @@ public class SessionCommands {
                     return CommandResult.error("Session Error", "No active session.");
                 }
                 ActiveStructureSession ass = context.sessionManager().getActiveStructureSession().get();
-                return CommandResult.ok(TerminalFormatter.boxText("Available Operations", getOpsBlock(ass.getRuntime()), structlab.app.ui.TerminalTheme.BLUE));
+                return CommandResult.success("Available Operations", getOpsBlock(ass.getRuntime()));
             }
             @Override
             public String getDescription() { return "View all available structure operations for the active session"; }
@@ -234,23 +242,33 @@ public class SessionCommands {
         ass.addHistory(result);
 
         StringBuilder sb = new StringBuilder();
-        if (result.success()) {
-            sb.append(TerminalFormatter.successBox("Operation Success", result.message())).append("\n");
-            if (result.returnedValue() != null) {
-                sb.append(TerminalFormatter.boxText("Returned", result.returnedValue(), structlab.app.ui.TerminalTheme.BLUE)).append("\n");
-            }
-            sb.append(TerminalFormatter.boxText("Current State", ass.getRuntime().renderCurrentState(), structlab.app.ui.TerminalTheme.GREEN));
-        } else {
-            sb.append(TerminalFormatter.errorBox("Operation Failed", result.message())).append("\n");
-            sb.append(TerminalFormatter.boxText("Current State", ass.getRuntime().renderCurrentState(), structlab.app.ui.TerminalTheme.GREEN));
+        sb.append(result.message()).append("\n");
+        if (result.success() && result.returnedValue() != null) {
+            sb.append("\nReturned: ").append(result.returnedValue());
         }
-        return CommandResult.ok(sb.toString().trim());
+        sb.append("\n\nCurrent State:\n").append(ass.getRuntime().renderCurrentState());
+
+        if (result.success()) {
+            return CommandResult.success("Operation Success", sb.toString());
+        } else {
+            return CommandResult.error("Operation Failed", sb.toString());
+        }
     }
 
     private static String getOpsBlock(StructureRuntime runtime) {
-        return runtime.getAvailableOperations().stream()
-                .map(o -> o.name() + (o.argCount() > 0 ? " <args>" : "") + " : " + o.description())
-                .collect(Collectors.joining("\n"));
+        StringBuilder sb = new StringBuilder();
+        for (structlab.app.runtime.OperationDescriptor o : runtime.getAvailableOperations()) {
+            sb.append(structlab.app.ui.TerminalTheme.GREEN).append(o.name()).append(structlab.app.ui.TerminalTheme.RESET);
+            if (o.aliases() != null && !o.aliases().isEmpty()) {
+                sb.append(" (").append(String.join(", ", o.aliases())).append(")");
+            }
+            sb.append("\n");
+            sb.append("  Usage:       ").append(o.usage()).append("\n");
+            sb.append("  Complexity:  ").append(o.complexityNote()).append("\n");
+            sb.append("  Mutates:     ").append(o.mutates() ? "Yes" : "No").append("\n");
+            sb.append("  Description: ").append(o.description()).append("\n\n");
+        }
+        return sb.toString().trim();
     }
 
     private static CommandResult openSession(CommandContext context, String sId, String iId) {
@@ -274,11 +292,11 @@ public class SessionCommands {
             context.sessionManager().startSession(session);
 
             StringBuilder sb = new StringBuilder();
-            sb.append(TerminalFormatter.successBox("Session Started", "Started interactive session for " + imOpt.get().name() + "."));
-            sb.append("\n\n");
-            sb.append(TerminalFormatter.boxText("Available Operations", getOpsBlock(runtime), structlab.app.ui.TerminalTheme.BLUE));
+            sb.append("Started interactive session for ").append(imOpt.get().name()).append(".\n\n");
+            sb.append("Available Operations:\n");
+            sb.append(getOpsBlock(runtime));
 
-            return CommandResult.ok(sb.toString());
+            return CommandResult.success("Session Started", sb.toString());
 
         } catch (Exception e) {
             return CommandResult.error("Init Error", "Failed to initialize physical runtime adapter. " + e.getMessage());

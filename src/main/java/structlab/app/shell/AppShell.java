@@ -41,18 +41,23 @@ public class AppShell {
                 CommandResult result = router.handle(context, cmd);
 
                 // Print the result properly
-                if (result.title() != null && !result.success()) {
-                    if (result.hint() != null) {
-                        System.out.println(structlab.app.ui.TerminalFormatter.errorBox(result.title(), result.body() + "\n" + structlab.app.ui.TerminalTheme.YELLOW + result.hint()));
+                if (result.clearScreenRequested()) {
+                    System.out.print("\033[H\033[2J");
+                    System.out.flush();
+                }
+
+                if (result.title() == null && result.body() != null) {
+                    System.out.println(result.body());
+                } else if (result.title() != null) {
+                    if (!result.success()) {
+                        String bodyTxt = result.body();
+                        if (result.hint() != null) {
+                            bodyTxt += "\n" + structlab.app.ui.TerminalTheme.YELLOW + result.hint();
+                        }
+                        System.out.println(structlab.app.ui.TerminalFormatter.errorBox(result.title(), bodyTxt));
                     } else {
-                        System.out.println(structlab.app.ui.TerminalFormatter.errorBox(result.title(), result.body()));
-                    }
-                } else if (result.title() != null && result.success()) {
-                    if (result.body() != null && !result.body().isEmpty()) {
                         System.out.println(structlab.app.ui.TerminalFormatter.successBox(result.title(), result.body()));
                     }
-                } else if (result.body() != null && !result.body().isEmpty()) {
-                     System.out.println(result.body());
                 }
 
                 if (result.exitRequested()) {

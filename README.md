@@ -53,11 +53,7 @@ a swamp.
 
 ## Project status
 
-> **Phase 3 â€” Console Rendering Layer (complete for arrays, stacks, queues, lists, deques, heaps)**
->
-> Phases 1â€“3 are complete for arrays, stacks, queues, lists, deques, and
-> heaps/priority queues.  Each traced structure has structure-aware ASCII
-> rendering with markers, boxed cells, node chains, tree-level views,
+> **Phase 5 — Terminal Simulator Foundation (complete)**`n>`n> Phases 1–4 are complete for arrays, stacks, queues, lists, deques, and heaps.`n> A solid terminal simulator backend (Phase 5) is now implemented.`n> Operations are fully interactive using integer elements.`n> GUI work is intended next, but not implemented yet.`n>`n> *Current limitations:*`n> - Terminal simulator still being refined.`n> - Failure/trace/history semantics are intentionally educational.`n> - Hash structures not fully interactive yet.`n> - Comparison mode not yet built.
 > and before/after transition display.  Hash structures are not yet
 > traced or rendered.
 
@@ -253,3 +249,4 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 ## License
 
 MIT â€” see [`LICENSE`](LICENSE).
+

@@ -51,17 +51,28 @@ public abstract class AbstractRuntimeAdapter implements StructureRuntime {
         );
     }
 
-    protected OperationExecutionResult error(String operation, Exception e) {
+    protected OperationExecutionResult error(String operation, Exception e, TraceLog traceLog) {
+        List<TraceStep> steps = traceLog != null ? new ArrayList<>(traceLog.steps()) : new ArrayList<>();
+        if (traceLog != null) {
+            traceLog.clear();
+        }
         return new OperationExecutionResult(
                 false,
                 e.getMessage(),
                 operation,
                 null,
-                new ArrayList<>()
+                steps
         );
+    }
+
+    protected structlab.trace.TraceLog getTraceLogFrom(Object activeThing) { try { return (structlab.trace.TraceLog) activeThing.getClass().getMethod("traceLog").invoke(activeThing); } catch (Exception ignores) { return null; } }
+
+    protected OperationExecutionResult error(String operation, Exception e) {
+        return error(operation, e, null);
     }
 
     protected Integer parseArg(String arg) {
         return Integer.parseInt(arg.trim());
     }
 }
+

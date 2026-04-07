@@ -20,9 +20,9 @@ public class QueueRuntimeAdapter extends AbstractRuntimeAdapter {
     @Override
     public List<OperationDescriptor> getAvailableOperations() {
         return List.of(
-                new OperationDescriptor("enqueue", List.of(), "Enqueue an element to the rear of the queue", 1, "enqueue <value>", true, "enqueue <value>", "O(1)"),
-                new OperationDescriptor("dequeue", List.of(), "Dequeue an element from the front of the queue", 0, "dequeue", true, "dequeue", "O(1)"),
-                new OperationDescriptor("peek", List.of(), "Look at the front element without removing it", 0, "peek", false, "peek", "O(1)")
+                new OperationDescriptor("enqueue", List.of("push"), "Enqueue an element to the rear of the queue", 1, "enqueue <value>", true, "enqueue <value>", "O(1)"),
+                new OperationDescriptor("dequeue", List.of("pop"), "Dequeue an element from the front of the queue", 0, "dequeue", true, "dequeue", "O(1)"),
+                new OperationDescriptor("peek", List.of("front"), "Look at the front element without removing it", 0, "peek", false, "peek", "O(1)")
         );
     }
 
@@ -31,6 +31,7 @@ public class QueueRuntimeAdapter extends AbstractRuntimeAdapter {
         try {
             switch (operation.toLowerCase()) {
                 case "enqueue":
+                case "push":
                     if (args.isEmpty()) throw new IllegalArgumentException("Usage: enqueue <value>");
                     int val = parseArg(args.get(0));
                     if (activeQueue instanceof TracedCircularArrayQueue tcaq) {
@@ -45,6 +46,7 @@ public class QueueRuntimeAdapter extends AbstractRuntimeAdapter {
                     }
                     break;
                 case "dequeue":
+                case "pop":
                     if (activeQueue instanceof TracedCircularArrayQueue tcaq) {
                         return success("dequeue", tcaq.dequeue(), tcaq.traceLog());
                     } else if (activeQueue instanceof TracedLinkedQueue tlq) {
@@ -54,6 +56,7 @@ public class QueueRuntimeAdapter extends AbstractRuntimeAdapter {
                     }
                     break;
                 case "peek":
+                case "front":
                     if (activeQueue instanceof TracedCircularArrayQueue tcaq) {
                         return success("peek", tcaq.peek(), tcaq.traceLog());
                     } else if (activeQueue instanceof TracedLinkedQueue tlq) {
@@ -66,7 +69,7 @@ public class QueueRuntimeAdapter extends AbstractRuntimeAdapter {
                     throw new UnsupportedOperationException("Unknown queue operation: " + operation);
             }
         } catch (Exception e) {
-            return error(operation, e);
+            return error(operation, e, getTraceLogFrom(activeQueue));
         }
         return error(operation, new IllegalStateException("Invalid active queue state"));
     }
