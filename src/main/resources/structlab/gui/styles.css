@@ -47,6 +47,39 @@
     -fx-background-color: #ffffff;
 }
 
+/* ── Structure detail box ────────────── */
+.detail-box {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: #dee2e6;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+
+.detail-name {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2b2d42;
+}
+
+.detail-description {
+    -fx-text-fill: #495057;
+    -fx-font-size: 12px;
+}
+
+.detail-keywords {
+    -fx-text-fill: #6c757d;
+    -fx-font-size: 11px;
+    -fx-font-style: italic;
+}
+
+/* ── Empty state labels ──────────────── */
+.empty-state {
+    -fx-text-fill: #adb5bd;
+    -fx-font-size: 12px;
+    -fx-font-style: italic;
+    -fx-alignment: center;
+}
+
 /* ── Monospace text areas ────────────── */
 .mono-area {
     -fx-font-family: "Consolas", "Courier New", monospace;

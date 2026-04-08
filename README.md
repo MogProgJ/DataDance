@@ -53,17 +53,26 @@ a swamp.
 
 ## Project status
 
-> **Phase 5 — Terminal Simulator Foundation (complete)**
+> **Phase 6 — JavaFX GUI Shell and Service Layer (active)**
 >
-> Phases 1–4 are complete for arrays, stacks, queues, lists, deques, and heaps.
-> A solid terminal simulator backend (Phase 5) is now implemented.
-> Operations are fully interactive using integer elements.
-> Phase 6 introduces a JavaFX GUI shell backed by a clean service facade.
+> Phases 1–5 are complete.  A terminal simulator backend and a JavaFX GUI
+> alpha are both functional.  The project now has a dual-interface
+> architecture: a GUI for primary manual testing and a terminal for
+> secondary smoke/debug usage.
 >
-> *Current limitations:*
-> - Hash structures not fully interactive yet.
-> - Comparison mode not yet built.
-> - GUI is an early skeleton; full visualisation is future work.
+> **What works:**
+> - Terminal simulator: full discovery, session, and operation flow
+> - JavaFX GUI: structure browsing, detail display, session lifecycle,
+>   operation execution, state/trace/history rendering
+> - Service facade: clean API consumed by the GUI, tested independently
+> - Backend tests: 280+ automated tests covering core, trace, render,
+>   and service layers
+>
+> **Current limitations:**
+> - Hash structures are not fully interactive yet
+> - Comparison mode is not yet built
+> - GUI visualisation is ASCII-based; richer graphics are future work
+> - Operations use integer-based interactive values
 
 ---
 
@@ -203,6 +212,11 @@ layer boundaries.
 | 8 | Comparison mode (same ops on multiple implementations) |
 | 9 | Algorithm demonstrations on top of structures |
 | 10 | Polish, testing, and educational refinement |
+| 6 | JavaFX GUI shell and service layer |
+| 7 | Broader data structure family |
+| 8 | Comparison mode (same ops on multiple implementations) |
+| 9 | Algorithm demonstrations on top of structures |
+| 10 | Polish, testing, and educational refinement |
 
 Full details are in [`docs/roadmap.md`](docs/roadmap.md).
 
@@ -214,37 +228,58 @@ For the Phase 0 working contract, see [`docs/phase-0-foundation.md`](docs/phase-
 
 Requires Java 17+ and Maven 3.9+.
 
+### GUI mode (primary)
+
+```bash
+mvn clean javafx:run
+```
+
+The JavaFX application window will open.  See
+[`docs/gui-playthrough-manual.md`](docs/gui-playthrough-manual.md) for a
+step-by-step walkthrough.
+
+### Terminal mode (secondary)
+
+```bash
+mvn compile exec:java "-Dexec.mainClass=structlab.app.StructLabApp"
+```
+
+See [`docs/how-to-play.md`](docs/how-to-play.md) for terminal commands and
+usage.
+
+### Build and test
+
 ```bash
 mvn compile         # compile all sources
 mvn test            # compile and run all tests
 ```
 
-To run a traced demo from the command line:
+### Run a traced demo
 
 ```bash
 mvn compile exec:java -Dexec.mainClass=structlab.demo.TracedArrayStackDemo
 ```
 
-To run the interactive terminal simulator:
+Replace the class name with any demo under `structlab.demo`.
 
-```bash
-mvn compile exec:java -Dexec.mainClass=structlab.app.StructLabApp
-```
+---
 
-For full instructions, rules, and commands on how to play/run the simulator, please see [**`docs/how-to-play.md`**](docs/how-to-play.md).
+## Testing the app
 
-### Simulator Commands
-Once inside the simulator, try the following flow:
-* `ls` - View all available data structures
-* `info stack` - See available implementations and time complexities for a stack
-* `play stack impl-array-stack` - Mount an array-based stack and begin simulation
-* `ops` - Check supported operations on your open structure
-* `push 10`, `pop`, `peek` - Apply live changes and render state
-* `history`, `last`, `reset` - Inspect or reset simulation timeline
-* `close` or `quit` - Exit session or simulator
+| Layer | Command | Purpose |
+|---|---|---|
+| Backend tests | `mvn test` | Primary regression gate — must always pass |
+| GUI manual testing | `mvn clean javafx:run` | Primary human acceptance surface |
+| Console smoke test | `mvn compile exec:java "-Dexec.mainClass=structlab.app.StructLabApp"` | Secondary debug/validation path |
 
-Replace the class name with any demo under `structlab.demo`.  Running demos
-from your IDE (right-click and Run) also works.
+- **GUI** is the main surface for manual feature validation.
+- **Backend tests** are mandatory before every merge.
+- **Terminal** remains available for quick debugging and smoke testing.
+
+For full details, see:
+- [`docs/gui-playthrough-manual.md`](docs/gui-playthrough-manual.md) — GUI testing manual
+- [`docs/testing-strategy.md`](docs/testing-strategy.md) — testing policy and checklist
+- [`docs/how-to-play.md`](docs/how-to-play.md) — terminal simulator guide
 
 ---
 

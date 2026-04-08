@@ -1,10 +1,10 @@
 package structlab.app.service;
 
-import structlab.app.runtime.OperationDescriptor;
 import structlab.app.runtime.OperationExecutionResult;
 import structlab.app.runtime.RuntimeFactory;
 import structlab.app.runtime.StructureRuntime;
 import structlab.app.session.ActiveStructureSession;
+import structlab.app.session.SessionManager;
 import structlab.registry.ImplementationMetadata;
 import structlab.registry.InMemoryStructureRegistry;
 import structlab.registry.RegistrySeeder;
@@ -12,7 +12,6 @@ import structlab.registry.StructureMetadata;
 import structlab.registry.StructureRegistry;
 import structlab.trace.TraceStep;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,20 +19,24 @@ import java.util.Optional;
  * Facade layer for GUI and programmatic consumers.
  * Wraps the registry, session, and runtime model into clean method calls
  * without depending on shell command parsing.
+ *
+ * Session ownership is delegated to {@link SessionManager} so that both the
+ * terminal shell and the GUI share a single session abstraction.
  */
 public class StructLabService {
 
     private final StructureRegistry registry;
-    private ActiveStructureSession activeSession;
+    private final SessionManager sessionManager;
 
-    public StructLabService(StructureRegistry registry) {
+    public StructLabService(StructureRegistry registry, SessionManager sessionManager) {
         this.registry = registry;
+        this.sessionManager = sessionManager;
     }
 
     public static StructLabService createDefault() {
         InMemoryStructureRegistry registry = new InMemoryStructureRegistry();
         RegistrySeeder.seed(registry);
-        return new StructLabService(registry);
+        return new StructLabService(registry, new SessionManager());
     }
 
     // ── Discovery ──────────────────────────────────────────────
@@ -62,7 +65,7 @@ public class StructLabService {
     // ── Session lifecycle ──────────────────────────────────────
 
     public boolean hasActiveSession() {
-        return activeSession != null;
+        return sessionManager.getActiveStructureSession().isPresent();
     }
 
     public SessionSnapshot openSession(String structureId, String implementationId) {
@@ -83,33 +86,31 @@ public class StructLabService {
         }
 
         StructureRuntime runtime = RuntimeFactory.createRuntime(smOpt.get(), imOpt.get());
-        activeSession = new ActiveStructureSession(sId, iId, runtime);
+        ActiveStructureSession session = new ActiveStructureSession(sId, iId, runtime);
+        sessionManager.startSession(session);
         return getSessionSnapshot().orElseThrow();
     }
 
     public void closeSession() {
-        if (activeSession != null) {
-            activeSession.close();
-            activeSession = null;
-        }
+        sessionManager.clearSession();
     }
 
     public Optional<SessionSnapshot> getSessionSnapshot() {
-        if (activeSession == null) return Optional.empty();
-        return Optional.of(new SessionSnapshot(
-                activeSession.getStructureId(),
-                activeSession.getImplementationId(),
-                activeSession.getRuntime().getStructureName(),
-                activeSession.getRuntime().getImplementationName(),
-                activeSession.historySize()
-        ));
+        return sessionManager.getActiveStructureSession().map(s ->
+                new SessionSnapshot(
+                        s.getStructureId(),
+                        s.getImplementationId(),
+                        s.getRuntime().getStructureName(),
+                        s.getRuntime().getImplementationName(),
+                        s.historySize()
+                ));
     }
 
     // ── Operations ─────────────────────────────────────────────
 
     public List<OperationInfo> getAvailableOperations() {
-        requireSession();
-        return activeSession.getRuntime().getAvailableOperations().stream()
+        ActiveStructureSession session = requireSession();
+        return session.getRuntime().getAvailableOperations().stream()
                 .map(o -> new OperationInfo(
                         o.name(), o.aliases(), o.description(),
                         o.argCount(), o.usage(), o.mutates(), o.complexityNote()))
@@ -117,41 +118,36 @@ public class StructLabService {
     }
 
     public ExecutionResult executeOperation(String operation, List<String> args) {
-        requireSession();
-        OperationExecutionResult result = activeSession.getRuntime().execute(operation, args);
-        activeSession.addHistory(result);
+        ActiveStructureSession session = requireSession();
+        OperationExecutionResult result = session.getRuntime().execute(operation, args);
+        session.addHistory(result);
         return toExecutionResult(result);
     }
 
     // ── State and history ──────────────────────────────────────
 
     public String getRenderedState() {
-        requireSession();
-        return activeSession.getRuntime().renderCurrentState();
+        return requireSession().getRuntime().renderCurrentState();
     }
 
     public List<ExecutionResult> getHistory() {
-        requireSession();
-        return activeSession.getHistory().stream()
+        return requireSession().getHistory().stream()
                 .map(this::toExecutionResult)
                 .toList();
     }
 
     public Optional<ExecutionResult> getLastResult() {
-        requireSession();
-        return activeSession.getLastResult().map(this::toExecutionResult);
+        return requireSession().getLastResult().map(this::toExecutionResult);
     }
 
     public List<TraceStep> getLastTraceSteps() {
-        requireSession();
-        return activeSession.getLastResult()
+        return requireSession().getLastResult()
                 .filter(r -> r.traceSteps() != null)
                 .map(r -> List.copyOf(r.traceSteps()))
                 .orElse(List.of());
     }
 
     public String getLastTraceRendered() {
-        requireSession();
         List<TraceStep> steps = getLastTraceSteps();
         if (steps.isEmpty()) return "No trace steps available.";
         StringBuilder sb = new StringBuilder();
@@ -164,17 +160,16 @@ public class StructLabService {
     // ── Reset ──────────────────────────────────────────────────
 
     public void resetSession() {
-        requireSession();
-        activeSession.getRuntime().reset();
-        activeSession.clearHistory();
+        ActiveStructureSession session = requireSession();
+        session.getRuntime().reset();
+        session.clearHistory();
     }
 
     // ── Internal ───────────────────────────────────────────────
 
-    private void requireSession() {
-        if (activeSession == null) {
-            throw new IllegalStateException("No active session. Open a session first.");
-        }
+    private ActiveStructureSession requireSession() {
+        return sessionManager.getActiveStructureSession()
+                .orElseThrow(() -> new IllegalStateException("No active session. Open a session first."));
     }
 
     private ExecutionResult toExecutionResult(OperationExecutionResult r) {

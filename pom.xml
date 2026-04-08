@@ -21,6 +21,9 @@
     <junit.jupiter.version>5.11.4</junit.jupiter.version>
     <surefire.version>3.5.5</surefire.version>
     <javafx.version>21.0.5</javafx.version>
+    <jacoco.version>0.8.12</jacoco.version>
+    <sonar.projectKey>MogProgj_DataDance</sonar.projectKey>
+    <sonar.organization>mogprogj</sonar.organization>
   </properties>
 
   <dependencies>
@@ -75,6 +78,24 @@
         <configuration>
           <mainClass>structlab.gui.StructLabFxApp</mainClass>
         </configuration>
+      </plugin>
+
+      <!-- Coverage: generates target/site/jacoco/jacoco.xml for Sonar -->
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <executions>
+          <execution>
+            <id>prepare-agent</id>
+            <goals><goal>prepare-agent</goal></goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>verify</phase>
+            <goals><goal>report</goal></goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

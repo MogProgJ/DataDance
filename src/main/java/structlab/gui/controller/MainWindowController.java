@@ -1,6 +1,5 @@
 package structlab.gui.controller;
 
-import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -18,7 +17,13 @@ public class MainWindowController {
     @FXML private ListView<ImplementationSummary> implementationListView;
     @FXML private Button openSessionButton;
 
-    // ── Center panel ────────────────────────────────────────────
+    // ── Center panel: structure details ──────────────────────────
+    @FXML private Label detailNameLabel;
+    @FXML private Label detailCategoryLabel;
+    @FXML private Label detailDescriptionLabel;
+    @FXML private Label detailKeywordsLabel;
+
+    // ── Center panel: state and trace ───────────────────────────
     @FXML private TextArea stateArea;
     @FXML private TextArea traceArea;
 
@@ -43,14 +48,23 @@ public class MainWindowController {
 
     private StructLabService service;
 
+    // ── Lifecycle ───────────────────────────────────────────────
+
     public void initService(StructLabService service) {
         this.service = service;
-        loadStructures();
+        refreshDiscovery();
+        initEmptyStates();
     }
 
     @FXML
     public void initialize() {
-        // Structure list: display name + category
+        setupCellFactories();
+        setupSelectionListeners();
+    }
+
+    // ── Cell factories ──────────────────────────────────────────
+
+    private void setupCellFactories() {
         structureListView.setCellFactory(lv -> new ListCell<>() {
             @Override
             protected void updateItem(StructureSummary item, boolean empty) {
@@ -59,7 +73,6 @@ public class MainWindowController {
             }
         });
 
-        // Implementation list: display name
         implementationListView.setCellFactory(lv -> new ListCell<>() {
             @Override
             protected void updateItem(ImplementationSummary item, boolean empty) {
@@ -68,7 +81,6 @@ public class MainWindowController {
             }
         });
 
-        // Operations list: display name + complexity
         operationListView.setCellFactory(lv -> new ListCell<>() {
             @Override
             protected void updateItem(OperationInfo item, boolean empty) {
@@ -88,51 +100,49 @@ public class MainWindowController {
                 }
             }
         });
+    }
 
-        // Selection listeners
+    // ── Selection listeners ─────────────────────────────────────
+
+    private void setupSelectionListeners() {
         structureListView.getSelectionModel().selectedItemProperty().addListener(
                 (obs, old, selected) -> onStructureSelected(selected));
         implementationListView.getSelectionModel().selectedItemProperty().addListener(
-                (obs, old, selected) -> openSessionButton.setDisable(selected == null || service.hasActiveSession()));
-    }
-
-    // ── Discovery ───────────────────────────────────────────────
-
-    private void loadStructures() {
-        if (service == null) return;
-        List<StructureSummary> structures = service.getAllStructures();
-        structureListView.setItems(FXCollections.observableArrayList(structures));
+                (obs, old, selected) -> updateOpenButtonState());
     }
 
     private void onStructureSelected(StructureSummary selected) {
         implementationListView.getItems().clear();
-        if (selected == null) return;
+        if (selected == null) {
+            clearStructureDetail();
+            return;
+        }
+        refreshStructureDetail(selected);
         List<ImplementationSummary> impls = service.getImplementations(selected.id());
         implementationListView.setItems(FXCollections.observableArrayList(impls));
-        openSessionButton.setDisable(service.hasActiveSession());
+        updateOpenButtonState();
     }
 
-    // ── Session ─────────────────────────────────────────────────
+    // ── Session actions ─────────────────────────────────────────
 
     @FXML
     private void onOpenSession() {
         ImplementationSummary impl = implementationListView.getSelectionModel().getSelectedItem();
-        if (impl == null) return;
+        if (impl == null) {
+            setStatus("Select an implementation first.");
+            return;
+        }
 
         try {
             SessionSnapshot snapshot = service.openSession(impl.parentStructureId(), impl.id());
-            updateSessionUI(snapshot);
+            refreshSessionInfo(snapshot);
             refreshState();
-            loadOperations();
-            historyListView.getItems().clear();
-
-            openSessionButton.setDisable(true);
-            resetButton.setDisable(false);
-            closeSessionButton.setDisable(false);
-            executeButton.setDisable(false);
-
+            refreshOperations();
+            refreshHistory();
+            refreshTrace();
+            setSessionButtonStates(true);
             statusLabel.setText("Session: " + snapshot.structureName() + " / " + snapshot.implementationName());
-            bottomStatusLabel.setText("Session opened for " + snapshot.implementationName());
+            setStatus("Session opened for " + snapshot.implementationName() + ".");
         } catch (Exception e) {
             showError("Failed to open session", e.getMessage());
         }
@@ -142,7 +152,7 @@ public class MainWindowController {
     private void onCloseSession() {
         service.closeSession();
         clearSessionUI();
-        bottomStatusLabel.setText("Session closed.");
+        setStatus("Session closed.");
     }
 
     @FXML
@@ -151,26 +161,21 @@ public class MainWindowController {
             service.resetSession();
             refreshState();
             refreshHistory();
-            traceArea.clear();
-            updateSessionOpsCount();
-            bottomStatusLabel.setText("Session reset to empty state.");
+            refreshTrace();
+            refreshSessionOpsCount();
+            setStatus("Session reset to empty state.");
         } catch (Exception e) {
             showError("Reset failed", e.getMessage());
         }
     }
 
-    // ── Operations ──────────────────────────────────────────────
-
-    private void loadOperations() {
-        List<OperationInfo> ops = service.getAvailableOperations();
-        operationListView.setItems(FXCollections.observableArrayList(ops));
-    }
+    // ── Operation execution ─────────────────────────────────────
 
     @FXML
     private void onExecuteOperation() {
         OperationInfo selectedOp = operationListView.getSelectionModel().getSelectedItem();
         if (selectedOp == null) {
-            bottomStatusLabel.setText("Select an operation first.");
+            setStatus("Select an operation first.");
             return;
         }
 
@@ -179,12 +184,17 @@ public class MainWindowController {
                 ? List.of()
                 : Arrays.stream(rawArgs.split("\\s+")).collect(Collectors.toList());
 
+        if (selectedOp.argCount() > 0 && args.isEmpty()) {
+            setStatus("This operation requires " + selectedOp.argCount() + " argument(s). Usage: " + selectedOp.usage());
+            return;
+        }
+
         try {
             ExecutionResult result = service.executeOperation(selectedOp.name(), args);
             refreshState();
             refreshHistory();
             refreshTrace();
-            updateSessionOpsCount();
+            refreshSessionOpsCount();
             argField.clear();
 
             if (result.success()) {
@@ -192,9 +202,9 @@ public class MainWindowController {
                 if (result.returnedValue() != null && !"null".equals(result.returnedValue())) {
                     msg += " -> " + result.returnedValue();
                 }
-                bottomStatusLabel.setText(msg);
+                setStatus(msg);
             } else {
-                bottomStatusLabel.setText("Failed: " + result.message());
+                setStatus("Failed: " + result.message());
             }
         } catch (Exception e) {
             showError("Execution error", e.getMessage());
@@ -203,14 +213,66 @@ public class MainWindowController {
 
     // ── Refresh helpers ─────────────────────────────────────────
 
+    private void refreshDiscovery() {
+        if (service == null) return;
+        List<StructureSummary> structures = service.getAllStructures();
+        structureListView.setItems(FXCollections.observableArrayList(structures));
+    }
+
+    private void refreshStructureDetail(StructureSummary s) {
+        detailNameLabel.setText(s.name());
+        detailCategoryLabel.setText("Category: " + s.category());
+        detailDescriptionLabel.setText(s.description() != null ? s.description() : "");
+        String kw = s.keywords() != null && !s.keywords().isEmpty()
+                ? "Keywords: " + String.join(", ", s.keywords()) : "";
+        detailKeywordsLabel.setText(kw);
+    }
+
+    private void clearStructureDetail() {
+        detailNameLabel.setText("Select a structure to view details.");
+        detailCategoryLabel.setText("");
+        detailDescriptionLabel.setText("");
+        detailKeywordsLabel.setText("");
+    }
+
+    private void refreshSessionInfo(SessionSnapshot snapshot) {
+        sessionStructureLabel.setText("Structure: " + snapshot.structureName());
+        sessionImplLabel.setText("Implementation: " + snapshot.implementationName());
+        sessionOpsCountLabel.setText("Operations: " + snapshot.operationCount());
+    }
+
+    private void refreshSessionOpsCount() {
+        service.getSessionSnapshot().ifPresent(s ->
+                sessionOpsCountLabel.setText("Operations: " + s.operationCount()));
+    }
+
     private void refreshState() {
-        if (!service.hasActiveSession()) return;
+        if (!service.hasActiveSession()) {
+            stateArea.clear();
+            return;
+        }
         stateArea.setText(service.getRenderedState());
     }
 
+    private void refreshTrace() {
+        if (!service.hasActiveSession()) {
+            traceArea.clear();
+            return;
+        }
+        String trace = service.getLastTraceRendered();
+        traceArea.setText(trace);
+    }
+
     private void refreshHistory() {
-        if (!service.hasActiveSession()) return;
+        if (!service.hasActiveSession()) {
+            historyListView.getItems().clear();
+            return;
+        }
         List<ExecutionResult> history = service.getHistory();
+        if (history.isEmpty()) {
+            historyListView.setItems(FXCollections.observableArrayList());
+            return;
+        }
         List<String> items = new java.util.ArrayList<>();
         for (int i = 0; i < history.size(); i++) {
             ExecutionResult r = history.get(i);
@@ -226,20 +288,28 @@ public class MainWindowController {
         historyListView.setItems(FXCollections.observableArrayList(items));
     }
 
-    private void refreshTrace() {
-        if (!service.hasActiveSession()) return;
-        traceArea.setText(service.getLastTraceRendered());
+    private void refreshOperations() {
+        List<OperationInfo> ops = service.getAvailableOperations();
+        operationListView.setItems(FXCollections.observableArrayList(ops));
     }
 
-    private void updateSessionUI(SessionSnapshot snapshot) {
-        sessionStructureLabel.setText("Structure: " + snapshot.structureName());
-        sessionImplLabel.setText("Implementation: " + snapshot.implementationName());
-        sessionOpsCountLabel.setText("Operations: " + snapshot.operationCount());
+    // ── UI state helpers ────────────────────────────────────────
+
+    private void initEmptyStates() {
+        clearStructureDetail();
+        clearSessionUI();
     }
 
-    private void updateSessionOpsCount() {
-        service.getSessionSnapshot().ifPresent(s ->
-                sessionOpsCountLabel.setText("Operations: " + s.operationCount()));
+    private void setSessionButtonStates(boolean sessionActive) {
+        openSessionButton.setDisable(sessionActive);
+        resetButton.setDisable(!sessionActive);
+        closeSessionButton.setDisable(!sessionActive);
+        executeButton.setDisable(!sessionActive);
+    }
+
+    private void updateOpenButtonState() {
+        ImplementationSummary sel = implementationListView.getSelectionModel().getSelectedItem();
+        openSessionButton.setDisable(sel == null || service.hasActiveSession());
     }
 
     private void clearSessionUI() {
@@ -253,13 +323,15 @@ public class MainWindowController {
         argField.clear();
 
         statusLabel.setText("Discovery Mode");
-        openSessionButton.setDisable(false);
-        resetButton.setDisable(true);
-        closeSessionButton.setDisable(true);
-        executeButton.setDisable(true);
+        setSessionButtonStates(false);
+    }
+
+    private void setStatus(String msg) {
+        bottomStatusLabel.setText(msg);
     }
 
     private void showError(String title, String message) {
+        setStatus("Error: " + message);
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
         alert.setHeaderText(null);

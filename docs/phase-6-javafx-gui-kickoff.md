@@ -47,12 +47,31 @@ discovery, session lifecycle, operations, state/history, and reset.
    events and state management.
 3. **Record-based DTOs.** All view-models are Java records — immutable,
    compact, and easy to test.
-4. **Service is stateful but single-user.** Matches the terminal model: one
+4. **Unified session ownership.** `StructLabService` delegates session
+   management to `SessionManager`, the same abstraction used by the terminal
+   shell.  This eliminates duplicate session state and prevents GUI/terminal
+   session drift.
+5. **Service is stateful but single-user.** Matches the terminal model: one
    active session at a time.
+
+## GUI layout
+
+The main window uses a `BorderPane` with:
+
+- **Left:** Discovery panel — structure list, implementation list, open session button
+- **Center:** Structure detail box (name, category, description, keywords),
+  structure state area, last trace area
+- **Right:** Session info, reset/close buttons, operations list, argument field
+  with execute button, history list
+- **Top:** Toolbar with app title and status
+- **Bottom:** Status bar with feedback messages
+
+Empty states are handled explicitly: placeholder text appears when no structure
+is selected, no session is open, no trace is available, or no history exists.
 
 ## What is next
 
-- Richer visualisation panels (ASCII art → graphical node/array rendering)
+- Richer visualisation panels (ASCII art to graphical node/array rendering)
 - Operation argument validation in the GUI
 - Comparison mode (side-by-side execution on multiple implementations)
 - Animation of trace steps

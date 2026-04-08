@@ -43,6 +43,18 @@
         <VBox styleClass="center-panel" spacing="8">
             <padding><Insets top="12" bottom="12" left="12" right="12"/></padding>
 
+            <!-- Structure details -->
+            <Label text="Structure Details" styleClass="section-header"/>
+            <VBox fx:id="structureDetailBox" spacing="4" styleClass="detail-box">
+                <padding><Insets top="6" bottom="6" left="8" right="8"/></padding>
+                <Label fx:id="detailNameLabel" text="Select a structure to view details." styleClass="detail-name"/>
+                <Label fx:id="detailCategoryLabel" text="" styleClass="info-label"/>
+                <Label fx:id="detailDescriptionLabel" text="" wrapText="true" styleClass="detail-description"/>
+                <Label fx:id="detailKeywordsLabel" text="" styleClass="detail-keywords"/>
+            </VBox>
+
+            <Separator/>
+
             <Label text="Structure State" styleClass="section-header"/>
             <TextArea fx:id="stateArea" editable="false" wrapText="true"
                       VBox.vgrow="ALWAYS" styleClass="mono-area"

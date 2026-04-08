@@ -73,6 +73,26 @@ class StructLabServiceTest {
         void getImplementationsForUnknownStructureReturnsEmpty() {
             assertTrue(service.getImplementations("bogus").isEmpty());
         }
+
+        @Test
+        void structureSummaryHasDescriptionForGuiDetail() {
+            Optional<StructureSummary> found = service.getStructure("struct-stack");
+            assertTrue(found.isPresent());
+            StructureSummary s = found.get();
+            assertNotNull(s.description());
+            assertFalse(s.description().isBlank());
+            assertNotNull(s.keywords());
+        }
+
+        @Test
+        void implementationSummaryHasDescriptionAndComplexity() {
+            List<ImplementationSummary> impls = service.getImplementations("struct-stack");
+            assertFalse(impls.isEmpty());
+            ImplementationSummary im = impls.get(0);
+            assertNotNull(im.description());
+            assertNotNull(im.timeComplexity());
+            assertNotNull(im.spaceComplexity());
+        }
     }
 
     // ── Session lifecycle ──────────────────────────────────────
@@ -267,8 +287,120 @@ class StructLabServiceTest {
         }
 
         @Test
+        void resetKeepsSessionOpen() {
+            service.openSession("struct-stack", "impl-array-stack");
+            service.executeOperation("push", List.of("1"));
+
+            service.resetSession();
+
+            assertTrue(service.hasActiveSession());
+            SessionSnapshot snap = service.getSessionSnapshot().orElseThrow();
+            assertEquals("struct-stack", snap.structureId());
+            assertEquals("impl-array-stack", snap.implementationId());
+        }
+
+        @Test
+        void resetAllowsNewOperationsAfterClear() {
+            service.openSession("struct-stack", "impl-array-stack");
+            service.executeOperation("push", List.of("1"));
+            service.resetSession();
+
+            ExecutionResult result = service.executeOperation("push", List.of("99"));
+            assertTrue(result.success());
+            assertEquals(1, service.getHistory().size());
+        }
+
+        @Test
         void resetWithoutSessionThrows() {
             assertThrows(IllegalStateException.class, () -> service.resetSession());
+        }
+    }
+
+    // ── Close session ──────────────────────────────────────────
+
+    @Nested
+    class CloseSessionTests {
+
+        @Test
+        void closeSessionClearsAllServiceState() {
+            service.openSession("struct-stack", "impl-array-stack");
+            service.executeOperation("push", List.of("1"));
+
+            service.closeSession();
+
+            assertFalse(service.hasActiveSession());
+            assertTrue(service.getSessionSnapshot().isEmpty());
+        }
+
+        @Test
+        void operationsAfterCloseThrow() {
+            service.openSession("struct-stack", "impl-array-stack");
+            service.closeSession();
+
+            assertThrows(IllegalStateException.class, () -> service.getAvailableOperations());
+            assertThrows(IllegalStateException.class, () -> service.getRenderedState());
+            assertThrows(IllegalStateException.class, () -> service.getHistory());
+            assertThrows(IllegalStateException.class, () -> service.resetSession());
+        }
+
+        @Test
+        void canReopenSessionAfterClose() {
+            service.openSession("struct-stack", "impl-array-stack");
+            service.closeSession();
+
+            SessionSnapshot snap = service.openSession("struct-queue", "impl-circular-array-queue");
+            assertTrue(service.hasActiveSession());
+            assertEquals("struct-queue", snap.structureId());
+        }
+    }
+
+    // ── Invalid operations ─────────────────────────────────────
+
+    @Nested
+    class InvalidOperationTests {
+
+        @BeforeEach
+        void open() {
+            service.openSession("struct-stack", "impl-array-stack");
+        }
+
+        @Test
+        void invalidOperationReturnsFailResult() {
+            ExecutionResult result = service.executeOperation("fly", List.of());
+            assertFalse(result.success());
+            assertNotNull(result.message());
+            assertFalse(result.message().isBlank());
+        }
+
+        @Test
+        void failedOperationAppearsInHistory() {
+            service.executeOperation("fly", List.of());
+            List<ExecutionResult> history = service.getHistory();
+            assertEquals(1, history.size());
+            assertFalse(history.get(0).success());
+        }
+
+        @Test
+        void traceAvailableAfterValidOperation() {
+            service.executeOperation("push", List.of("10"));
+            List<?> steps = service.getLastTraceSteps();
+            assertFalse(steps.isEmpty());
+            String rendered = service.getLastTraceRendered();
+            assertNotNull(rendered);
+            assertFalse(rendered.equals("No trace steps available."));
+        }
+
+        @Test
+        void traceAvailableAfterFailedOperation() {
+            service.executeOperation("push", List.of("10"));
+            service.executeOperation("pop", List.of());
+            service.executeOperation("pop", List.of()); // pop on empty — should fail
+
+            // The last result should still be traceable
+            Optional<ExecutionResult> last = service.getLastResult();
+            assertTrue(last.isPresent());
+            String rendered = service.getLastTraceRendered();
+            assertNotNull(rendered);
         }
     }
 }
