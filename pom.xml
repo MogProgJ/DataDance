@@ -23,11 +23,10 @@
     <javafx.version>21.0.5</javafx.version>
     <jacoco.version>0.8.12</jacoco.version>
     <sonar.projectKey>MogProgj_DataDance</sonar.projectKey>
-    <sonar.organization>mogprogj</sonar.organization>
+    <sonar.organization>asae44344grsgy546grger</sonar.organization>
   </properties>
 
-<sonar.organization>asae44344grsgy546grger</sonar.organization>
-<sonar.projectKey>MogProgJ_DataDance</sonar.projectKey>
+
   <dependencies>
     <!-- JavaFX -->
     <dependency>
