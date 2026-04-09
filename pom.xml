@@ -26,6 +26,8 @@
     <sonar.organization>mogprogj</sonar.organization>
   </properties>
 
+<sonar.organization>asae44344grsgy546grger</sonar.organization>
+<sonar.projectKey>MogProgJ_DataDance</sonar.projectKey>
   <dependencies>
     <!-- JavaFX -->
     <dependency>
