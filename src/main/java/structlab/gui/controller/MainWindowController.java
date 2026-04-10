@@ -12,11 +12,16 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.util.Duration;
 
+import structlab.app.comparison.ComparisonEntryResult;
 import structlab.app.comparison.ComparisonOperationResult;
+import structlab.app.comparison.ComparisonRuntimeEntry;
 import structlab.app.comparison.ComparisonSession;
 import structlab.app.service.*;
 import structlab.gui.*;
+import structlab.gui.visual.ComparisonCardPane;
+import structlab.gui.visual.ComparisonSummaryPane;
 import structlab.gui.visual.VisualStateFactory;
+import structlab.trace.TraceStep;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -64,8 +69,9 @@ public class MainWindowController {
     // ══ Compare page elements ════════════════════════════════
     private ListView<StructureSummary> cmpStructList;
     private Button cmpStartBtn;
-    private Label cmpOverviewLabel;
-    private TextArea cmpState, cmpTrace;
+    private ComparisonSummaryPane cmpSummary;
+    private VBox cmpCardGrid;
+    private final List<ComparisonCardPane> cmpCards = new ArrayList<>();
     private Label cmpSessLabel, cmpImplCount, cmpOpsCount;
     private Button cmpResetBtn, cmpCloseBtn;
     private ListView<OperationInfo> cmpOpList;
@@ -570,38 +576,33 @@ public class MainWindowController {
                 styledLabel("STRUCTURES", "section-header"),
                 hint, cmpStructList, btnBox);
 
-        // Workspace
+        // Workspace — visual card grid
         VBox ws = new VBox();
         ws.getStyleClass().add("workspace");
         HBox.setHgrow(ws, Priority.ALWAYS);
 
-        VBox overviewCard = buildCard("COMPARISON OVERVIEW");
-        VBox overviewBody = cardBody(overviewCard);
-        cmpOverviewLabel = styledLabel(
+        cmpSummary = new ComparisonSummaryPane();
+
+        cmpCardGrid = new VBox(14);
+        cmpCardGrid.getStyleClass().add("comparison-card-grid");
+
+        Label emptyHint = styledLabel(
                 "Select a structure and start a comparison to analyze implementations side by side.",
                 "detail-description");
-        cmpOverviewLabel.setWrapText(true);
-        overviewBody.getChildren().add(cmpOverviewLabel);
+        emptyHint.setWrapText(true);
+        emptyHint.setPadding(new Insets(24));
+        cmpCardGrid.getChildren().add(emptyHint);
 
-        VBox stateCard = buildCard("COMPARISON STATE");
-        VBox.setVgrow(stateCard, Priority.ALWAYS);
-        VBox stateBody = cardBody(stateCard);
-        VBox.setVgrow(stateBody, Priority.ALWAYS);
-        cmpState = monoArea("Start a comparison to see implementation states side by side.");
-        VBox.setVgrow(cmpState, Priority.ALWAYS);
-        stateBody.getChildren().add(cmpState);
-
-        VBox traceCard = buildCard("COMPARISON TRACES");
-        VBox traceBody = cardBody(traceCard);
-        cmpTrace = monoArea("Execution traces for all implementations appear here.");
-        cmpTrace.setPrefHeight(150);
-        traceBody.getChildren().add(cmpTrace);
-
-        VBox wsContent = new VBox(12, overviewCard, stateCard, traceCard);
+        VBox wsContent = new VBox(14, cmpSummary, cmpCardGrid);
         wsContent.getStyleClass().add("workspace-content");
         wsContent.setPadding(new Insets(16, 20, 16, 20));
         VBox.setVgrow(wsContent, Priority.ALWAYS);
-        ws.getChildren().add(wsContent);
+
+        ScrollPane wsScroll = new ScrollPane(wsContent);
+        wsScroll.setFitToWidth(true);
+        wsScroll.getStyleClass().add("visual-scroll");
+        VBox.setVgrow(wsScroll, Priority.ALWAYS);
+        ws.getChildren().add(wsScroll);
 
         // Inspector
         VBox insp = buildCompareInspector();
@@ -688,12 +689,9 @@ public class MainWindowController {
             cmpSessLabel.setText(cs.getStructureName());
             cmpImplCount.setText(cs.entryCount() + " implementations");
             cmpOpsCount.setText("Operations: 0");
-            cmpOverviewLabel.setText("Comparing " + cs.entryCount()
-                    + " implementations of " + cs.getStructureName()
-                    + ". Execute operations to observe differences.");
 
-            cmpState.setText(GuiComparisonRenderer.renderStates(cs));
-            cmpTrace.clear();
+            cmpSummary.updateSession(cs.getStructureName(), cs.entryCount());
+            buildComparisonCards(cs);
 
             List<OperationInfo> ops = cs.getCommonOperations().stream()
                     .map(o -> new OperationInfo(
@@ -732,8 +730,8 @@ public class MainWindowController {
         try {
             service.resetComparisonSession();
             ComparisonSession cs = service.requireComparisonSession();
-            cmpState.setText(GuiComparisonRenderer.renderStates(cs));
-            cmpTrace.clear();
+            buildComparisonCards(cs);
+            cmpSummary.updateSession(cs.getStructureName(), cs.entryCount());
             cmpHistory.setItems(FXCollections.observableArrayList());
             cmpOpsCount.setText("Operations: 0");
             activityLog.log("Comparison reset", "", "comparison");
@@ -765,8 +763,8 @@ public class MainWindowController {
                     service.executeComparisonOperation(op.name(), args);
             ComparisonSession cs = service.requireComparisonSession();
 
-            cmpState.setText(GuiComparisonRenderer.renderStates(cs));
-            cmpTrace.setText(GuiComparisonRenderer.renderCompactTraces(cs));
+            refreshComparisonCards(result, cs);
+            cmpSummary.updateAfterOperation(cs.historySize(), result.allSucceeded());
             cmpOpsCount.setText("Operations: " + cs.historySize());
             cmpArgField.clear();
 
@@ -802,6 +800,53 @@ public class MainWindowController {
         cmpArgField.setPromptText(sel.argCount() == 0 ? "no args needed" : hint);
     }
 
+    // ── Compare visual card helpers ─────────────────────────
+
+    private void buildComparisonCards(ComparisonSession cs) {
+        cmpCards.clear();
+        cmpCardGrid.getChildren().clear();
+        for (ComparisonRuntimeEntry entry : cs.getEntries()) {
+            ComparisonCardPane card = new ComparisonCardPane();
+            String rawSnapshot = entry.getRuntime().getCurrentState();
+            String renderedState = entry.getRuntime().renderCurrentState();
+            card.updateState(entry.getImplementationName(), rawSnapshot, renderedState);
+            cmpCards.add(card);
+            cmpCardGrid.getChildren().add(card);
+        }
+    }
+
+    private void refreshComparisonCards(ComparisonOperationResult result, ComparisonSession cs) {
+        List<ComparisonEntryResult> entryResults = result.entryResults();
+        List<ComparisonRuntimeEntry> entries = cs.getEntries();
+        for (int i = 0; i < entryResults.size() && i < cmpCards.size(); i++) {
+            ComparisonEntryResult er = entryResults.get(i);
+            ComparisonRuntimeEntry entry = entries.get(i);
+
+            String rawSnapshot = entry.getRuntime().getCurrentState();
+            String renderedState = entry.getRuntime().renderCurrentState();
+
+            // Build trace text from trace steps
+            StringBuilder traceText = new StringBuilder();
+            for (TraceStep step : er.traceSteps()) {
+                traceText.append(step.format()).append("\n");
+            }
+            if (!er.success() && er.message() != null) {
+                traceText.append("Error: ").append(er.message()).append("\n");
+            }
+
+            cmpCards.get(i).updateResult(
+                    er.implementationName(),
+                    er.success(),
+                    er.returnedValue(),
+                    rawSnapshot,
+                    renderedState,
+                    er.traceSteps().size(),
+                    traceText.toString(),
+                    cs.historySize()
+            );
+        }
+    }
+
     private void setCompareSessionButtons(boolean active) {
         cmpStartBtn.setDisable(active);
         cmpResetBtn.setDisable(!active);
@@ -814,10 +859,15 @@ public class MainWindowController {
         cmpSessLabel.setText("No active comparison");
         cmpImplCount.setText("");
         cmpOpsCount.setText("");
-        cmpOverviewLabel.setText(
-                "Select a structure and start a comparison to analyze implementations side by side.");
-        cmpState.clear();
-        cmpTrace.clear();
+        cmpSummary.updateIdle();
+        cmpCards.clear();
+        cmpCardGrid.getChildren().clear();
+        Label emptyHint = styledLabel(
+                "Select a structure and start a comparison to analyze implementations side by side.",
+                "detail-description");
+        emptyHint.setWrapText(true);
+        emptyHint.setPadding(new Insets(24));
+        cmpCardGrid.getChildren().add(emptyHint);
         cmpOpList.getItems().clear();
         cmpHistory.getItems().clear();
         cmpArgField.clear();
