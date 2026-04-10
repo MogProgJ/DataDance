@@ -35,6 +35,10 @@
             <Button fx:id="openSessionButton" text="Open Session"
                     onAction="#onOpenSession" maxWidth="Infinity"
                     styleClass="primary-button" disable="true"/>
+
+            <Button fx:id="compareAllButton" text="Compare All"
+                    onAction="#onCompareAll" maxWidth="Infinity"
+                    styleClass="secondary-button" disable="true"/>
         </VBox>
     </left>
 
