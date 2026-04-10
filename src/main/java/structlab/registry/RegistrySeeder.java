@@ -183,18 +183,36 @@ public class RegistrySeeder {
         );
         registry.registerStructure(hashMeta);
 
-        // Note: Hash Set/Map tracing is not fully done yet, we can use null or placeholder for missing Traced classes.
+        // Note: Hash Set/Map tracing is fully wired.
         registry.registerImplementation(new ImplementationMetadata(
             "impl-hash-table-chaining", "Hash Table Chaining", "struct-hash",
             "Hash table resolving collisions using linked lists.",
             Map.of("put", "O(1) avg", "get", "O(1) avg", "remove", "O(1) avg"), "O(N)",
-            structlab.core.hash.HashTableChaining.class
+            TracedHashTableChaining.class
         ));
         registry.registerImplementation(new ImplementationMetadata(
             "impl-hash-set", "Hash Set", "struct-hash",
             "Set backed by a hash table.",
             Map.of("add", "O(1) avg", "contains", "O(1) avg", "remove", "O(1) avg"), "O(N)",
-            structlab.core.hash.HashSetCustom.class
+            TracedHashSetCustom.class
+        ));
+        registry.registerImplementation(new ImplementationMetadata(
+            "impl-hash-oa-linear", "Hash Table Open Addressing (Linear)", "struct-hash",
+            "Hash table resolving collisions using open addressing with linear probing.",
+            Map.of("put", "O(1) avg", "get", "O(1) avg", "remove", "O(1) avg"), "O(N)",
+            TracedHashTableOpenAddressing.class
+        ));
+        registry.registerImplementation(new ImplementationMetadata(
+            "impl-hash-oa-quadratic", "Hash Table Open Addressing (Quadratic)", "struct-hash",
+            "Hash table resolving collisions using open addressing with quadratic probing.",
+            Map.of("put", "O(1) avg", "get", "O(1) avg", "remove", "O(1) avg"), "O(N)",
+            TracedHashTableOpenAddressing.class
+        ));
+        registry.registerImplementation(new ImplementationMetadata(
+            "impl-hash-oa-double", "Hash Table Open Addressing (Double Hashing)", "struct-hash",
+            "Hash table resolving collisions using open addressing with double hashing.",
+            Map.of("put", "O(1) avg", "get", "O(1) avg", "remove", "O(1) avg"), "O(N)",
+            TracedHashTableOpenAddressing.class
         ));
     }
 }

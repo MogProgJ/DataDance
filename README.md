@@ -69,7 +69,6 @@ a swamp.
 >   and service layers
 >
 > **Current limitations:**
-> - Hash structures are not fully interactive yet
 > - Comparison mode is not yet built
 > - GUI visualisation is ASCII-based; richer graphics are future work
 > - Operations use integer-based interactive values
@@ -93,6 +92,8 @@ a swamp.
 | Deque | Array deque | `ArrayDequeCustom` | yes | yes | yes |
 | Heap | Binary heap | `BinaryHeap` (on DynamicArray) | yes | yes | yes |
 | Heap | Priority queue | `HeapPriorityQueue` | yes | yes | yes |
+| Hash | Hash table (chaining) | `HashTableChaining` | yes | yes | yes |
+| Hash | Hash set | `HashSetCustom` | yes | yes | yes |
 
 ---
 
@@ -119,6 +120,8 @@ The trace layer lives under `src/main/java/structlab/trace/` and provides:
 | `TracedArrayDequeCustom` | Traced wrapper for `ArrayDequeCustom` |
 | `TracedBinaryHeap` | Traced wrapper for `BinaryHeap` |
 | `TracedHeapPriorityQueue` | Traced wrapper for `HeapPriorityQueue` |
+| `TracedHashTableChaining` | Traced wrapper for `HashTableChaining` |
+| `TracedHashSetCustom` | Traced wrapper for `HashSetCustom` |
 
 Each `TraceStep` captures: structure name, implementation name, operation name,
 input arguments, before-state snapshot, after-state snapshot, invariant result,
@@ -163,6 +166,8 @@ Rendered structures include visual markers and layout cues:
 | ArrayDequeCustom | Circular buffer with `F`/`R` markers, logical order |
 | BinaryHeap | Array view plus tree-level view showing parent/child layout |
 | HeapPriorityQueue | Priority info with underlying heap array and tree view |
+| HashTableChaining | Bucket array with per-bucket chains, size, capacity, load factor |
+| HashSetCustom | Set size with backing hash table bucket view |
 
 All traced demos use `ConsoleTraceRenderer` for polished terminal output.
 
@@ -280,6 +285,98 @@ For full details, see:
 - [`docs/gui-playthrough-manual.md`](docs/gui-playthrough-manual.md) — GUI testing manual
 - [`docs/testing-strategy.md`](docs/testing-strategy.md) — testing policy and checklist
 - [`docs/how-to-play.md`](docs/how-to-play.md) — terminal simulator guide
+
+---
+
+## CI/CD Pipeline
+
+### Continuous Integration (`ci.yml`)
+
+Every push to `main` or `Gemini` (and every pull request) triggers two jobs:
+
+| Job | What it does |
+|---|---|
+| **verify** | `mvn clean verify` — compile, run all tests, generate JaCoCo coverage |
+| **package** | `mvn clean package -DskipTests` — produce the shaded uber-JAR artifact |
+
+CI artifacts are downloadable from the GitHub Actions run page:
+- `jacoco-report` — HTML coverage report (14-day retention)
+- `structlab-snapshot` — packaged JAR (30-day retention)
+
+### Release automation (`release.yml`)
+
+Pushing a version tag triggers a full release build:
+
+```bash
+# Cut a release
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+The release workflow will:
+1. Set the Maven version from the tag (e.g. `v0.2.0` → `0.2.0`)
+2. Run the full test suite
+3. Build the shaded uber-JAR
+4. Create a GitHub Release with auto-generated release notes
+5. Attach the JAR to the release as a downloadable asset
+
+**Tag format:** `vX.Y.Z` (e.g. `v0.2.0`, `v1.0.0`).
+Pre-release tags like `v0.3.0-rc1` are supported and marked as pre-release.
+
+During development the `pom.xml` version stays at `SNAPSHOT`.  The release
+workflow overrides it at build time — no manual pom.xml edits needed.
+
+### Local CI
+
+```bash
+bash scripts/ci-local.sh
+```
+
+This runs the same verify + package steps that CI performs.
+
+---
+
+## Docker
+
+Docker support provides **reproducible builds** and **CI parity**, not GUI
+execution.  JavaFX requires a display server, so the containerised app runs
+in **terminal mode only**.
+
+### What Docker is for
+
+- Running the full test suite in an isolated, reproducible environment
+- Building the packaged JAR in a clean room (no local toolchain variation)
+- Headless terminal-mode execution
+- CI parity — same JDK, same Maven, same results
+
+### What Docker is NOT for
+
+- Running the JavaFX GUI (requires a display server / X11 forwarding)
+- Production deployment (this is a desktop app, not a server)
+
+### Usage
+
+```bash
+# Build the image (runs tests during build)
+docker build -t structlab .
+
+# Run in terminal mode
+docker run --rm structlab
+
+# Package only (skip tests)
+docker run --rm structlab mvn -B package -DskipTests
+
+# Extract the built JAR
+docker create --name sl structlab
+docker cp sl:/app/structlab.jar .
+docker rm sl
+```
+
+The Dockerfile uses a multi-stage build:
+1. **Builder stage** (`maven:3.9-eclipse-temurin-17`) — dependency resolution,
+   compile, test, package
+2. **Runtime stage** (`eclipse-temurin:17-jre`) — minimal image with only the
+   built JAR
 
 ---
 

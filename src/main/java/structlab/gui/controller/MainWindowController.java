@@ -109,6 +109,21 @@ public class MainWindowController {
                 (obs, old, selected) -> onStructureSelected(selected));
         implementationListView.getSelectionModel().selectedItemProperty().addListener(
                 (obs, old, selected) -> updateOpenButtonState());
+        operationListView.getSelectionModel().selectedItemProperty().addListener(
+                (obs, old, selected) -> onOperationSelected(selected));
+    }
+
+    private void onOperationSelected(OperationInfo selected) {
+        if (selected == null) {
+            argField.setPromptText("args (e.g. 42)");
+            return;
+        }
+        // Strip the operation name prefix from the usage string to get just the arg hint
+        String usage = selected.usage();
+        String argsHint = usage.startsWith(selected.name() + " ")
+                ? usage.substring(selected.name().length() + 1)
+                : usage;
+        argField.setPromptText(selected.argCount() == 0 ? "no args needed" : argsHint);
     }
 
     private void onStructureSelected(StructureSummary selected) {
@@ -184,7 +199,7 @@ public class MainWindowController {
                 ? List.of()
                 : Arrays.stream(rawArgs.split("\\s+")).collect(Collectors.toList());
 
-        if (selectedOp.argCount() > 0 && args.isEmpty()) {
+        if (args.size() < selectedOp.argCount()) {
             setStatus("This operation requires " + selectedOp.argCount() + " argument(s). Usage: " + selectedOp.usage());
             return;
         }

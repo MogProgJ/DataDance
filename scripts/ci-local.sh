@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
+# ──────────────────────────────────────────────────────────────
 # Run the same checks CI performs, locally.
 # Usage: bash scripts/ci-local.sh
+# ──────────────────────────────────────────────────────────────
 set -euo pipefail
 
-echo "=== Build + Test + Coverage ==="
+echo "=== [1/2] Verify (compile + test + coverage) ==="
 mvn -B -ntp clean verify
 
 echo ""
+echo "=== [2/2] Package (uber-JAR) ==="
+mvn -B -ntp package -DskipTests
+
+echo ""
 echo "=== Done ==="
-echo "Coverage report: target/site/jacoco/index.html"
+echo "Coverage report : target/site/jacoco/index.html"
+echo "Packaged JAR    : $(ls target/structlab-*.jar 2>/dev/null || echo 'not found')"

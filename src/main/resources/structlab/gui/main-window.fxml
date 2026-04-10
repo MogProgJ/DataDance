@@ -96,7 +96,8 @@
             <ListView fx:id="operationListView" prefHeight="140"/>
 
             <HBox spacing="6" alignment="CENTER_LEFT">
-                <TextField fx:id="argField" promptText="args (e.g. 42)"
+                <TextField fx:id="argField" promptText="select an operation"
+                           onAction="#onExecuteOperation"
                            HBox.hgrow="ALWAYS"/>
                 <Button fx:id="executeButton" text="Execute" onAction="#onExecuteOperation"
                         styleClass="primary-button" disable="true"/>
