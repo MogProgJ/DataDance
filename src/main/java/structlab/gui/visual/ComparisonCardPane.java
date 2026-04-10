@@ -31,6 +31,7 @@ public class ComparisonCardPane extends VBox {
     private QueueVisualPane queuePane;
     private CircularQueueVisualPane circularQueuePane;
     private HeapVisualPane heapPane;
+    private PriorityQueueVisualPane priorityQueuePane;
 
     public ComparisonCardPane() {
         getStyleClass().add("comparison-card");
@@ -198,9 +199,9 @@ public class ComparisonCardPane extends VBox {
                 yield heapPane;
             }
             case "HeapPriorityQueue" -> {
-                if (heapPane == null) heapPane = new HeapVisualPane();
-                heapPane.update(StateModelParser.parseHeapPriorityQueue(snapshot));
-                yield heapPane;
+                if (priorityQueuePane == null) priorityQueuePane = new PriorityQueueVisualPane();
+                priorityQueuePane.update(StateModelParser.parseHeapPriorityQueue(snapshot));
+                yield priorityQueuePane;
             }
             default -> null;
         };

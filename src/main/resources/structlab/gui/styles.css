@@ -1269,3 +1269,115 @@
     -fx-font-size: 11px;
     -fx-text-fill: #d1d5db;
 }
+
+/* ══════════════════════════════════════════════════════════
+   Priority Queue Visual Pane — ADT / behavior-first lens
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Implementation badge ───────────────────────────────── */
+.pq-impl-badge {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 10px;
+    -fx-text-fill: #6ee7b7;
+    -fx-background-color: rgba(16, 185, 129, 0.12);
+    -fx-padding: 2 8 2 8;
+    -fx-background-radius: 6;
+    -fx-border-color: rgba(16, 185, 129, 0.30);
+    -fx-border-radius: 6;
+}
+
+/* ── Next Out hero section ──────────────────────────────── */
+.pq-next-out-section {
+    -fx-background-color: rgba(16, 185, 129, 0.08);
+    -fx-border-color: rgba(16, 185, 129, 0.30);
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 10 16 10 16;
+}
+
+.pq-next-out-label {
+    -fx-font-size: 10px;
+    -fx-text-fill: #6ee7b7;
+    -fx-font-weight: bold;
+    -fx-text-transform: uppercase;
+}
+
+.pq-next-out-value {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 22px;
+    -fx-text-fill: #34d399;
+    -fx-font-weight: bold;
+}
+
+/* ── Priority strip ─────────────────────────────────────── */
+.pq-strip-label {
+    -fx-font-size: 10px;
+    -fx-text-fill: #6b7280;
+    -fx-padding: 0 0 2 0;
+}
+
+.pq-priority-strip {
+    -fx-padding: 4 0 4 0;
+}
+
+.pq-chip {
+    -fx-background-color: #1e2530;
+    -fx-border-color: #3b4252;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 3 8 3 8;
+}
+
+.pq-chip-front {
+    -fx-border-color: #10b981;
+    -fx-background-color: rgba(16, 185, 129, 0.12);
+    -fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.20), 6, 0, 0, 1);
+}
+
+.pq-chip-value {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 12px;
+    -fx-text-fill: #e2e8f0;
+    -fx-font-weight: bold;
+}
+
+.pq-chip-front .pq-chip-value {
+    -fx-text-fill: #6ee7b7;
+}
+
+.pq-chip-arrow {
+    -fx-font-size: 14px;
+    -fx-text-fill: #4b5563;
+    -fx-padding: 0 1 0 1;
+}
+
+/* ── Heap detail (collapsible) ──────────────────────────── */
+.pq-heap-detail-section {
+    -fx-padding: 4 0 0 0;
+    -fx-border-color: #2d333b;
+    -fx-border-width: 1 0 0 0;
+}
+
+.pq-heap-detail-toggle {
+    -fx-font-size: 11px;
+    -fx-text-fill: #6b7280;
+    -fx-cursor: hand;
+    -fx-padding: 3 0 2 0;
+}
+
+.pq-heap-detail-toggle:hover {
+    -fx-text-fill: #9ca3af;
+}
+
+.pq-heap-detail-content {
+    -fx-padding: 4 0 2 0;
+}
+
+.pq-detail-label {
+    -fx-font-size: 10px;
+    -fx-text-fill: #6b7280;
+    -fx-padding: 0 6 0 0;
+    -fx-alignment: CENTER-LEFT;
+}
