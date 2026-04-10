@@ -11,10 +11,9 @@
 #   • Headless terminal-mode execution
 #
 # Usage:
-#   docker build -t structlab .                    # build
-#   docker run --rm structlab                      # run tests
-#   docker run --rm structlab mvn -B package -DskipTests  # package only
-#   docker cp $(docker create structlab):/app/target/structlab-*.jar .  # extract JAR
+#   docker build -t structlab .                               # build image
+#   docker run --rm structlab                                 # run (headless terminal mode)
+#   docker cp $(docker create structlab):/app/structlab.jar . # extract JAR
 #
 # ──────────────────────────────────────────────────────────────
 

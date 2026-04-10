@@ -231,12 +231,14 @@ For the Phase 0 working contract, see [`docs/phase-0-foundation.md`](docs/phase-
 
 ## Running the project
 
-Requires Java 17+ and Maven 3.9+.
+Requires Java 17+.  Maven is provided by the included
+[Maven Wrapper](https://maven.apache.org/wrapper/) — no global Maven
+installation needed.
 
 ### GUI mode (primary)
 
 ```bash
-mvn clean javafx:run
+./mvnw clean javafx:run
 ```
 
 The JavaFX application window will open.  See
@@ -246,7 +248,7 @@ step-by-step walkthrough.
 ### Terminal mode (secondary)
 
 ```bash
-mvn compile exec:java "-Dexec.mainClass=structlab.app.StructLabApp"
+./mvnw compile exec:java "-Dexec.mainClass=structlab.app.StructLabApp"
 ```
 
 See [`docs/how-to-play.md`](docs/how-to-play.md) for terminal commands and
@@ -255,14 +257,14 @@ usage.
 ### Build and test
 
 ```bash
-mvn compile         # compile all sources
-mvn test            # compile and run all tests
+./mvnw compile         # compile all sources
+./mvnw test            # compile and run all tests
 ```
 
 ### Run a traced demo
 
 ```bash
-mvn compile exec:java -Dexec.mainClass=structlab.demo.TracedArrayStackDemo
+./mvnw compile exec:java -Dexec.mainClass=structlab.demo.TracedArrayStackDemo
 ```
 
 Replace the class name with any demo under `structlab.demo`.
@@ -273,9 +275,9 @@ Replace the class name with any demo under `structlab.demo`.
 
 | Layer | Command | Purpose |
 |---|---|---|
-| Backend tests | `mvn test` | Primary regression gate — must always pass |
-| GUI manual testing | `mvn clean javafx:run` | Primary human acceptance surface |
-| Console smoke test | `mvn compile exec:java "-Dexec.mainClass=structlab.app.StructLabApp"` | Secondary debug/validation path |
+| Backend tests | `./mvnw test` | Primary regression gate — must always pass |
+| GUI manual testing | `./mvnw clean javafx:run` | Primary human acceptance surface |
+| Console smoke test | `./mvnw compile exec:java "-Dexec.mainClass=structlab.app.StructLabApp"` | Secondary debug/validation path |
 
 - **GUI** is the main surface for manual feature validation.
 - **Backend tests** are mandatory before every merge.
@@ -296,8 +298,8 @@ Every push to `main` or `Gemini` (and every pull request) triggers two jobs:
 
 | Job | What it does |
 |---|---|
-| **verify** | `mvn clean verify` — compile, run all tests, generate JaCoCo coverage |
-| **package** | `mvn clean package -DskipTests` — produce the shaded uber-JAR artifact |
+| **verify** | `./mvnw clean verify` — compile, run all tests, generate JaCoCo coverage |
+| **package** | `./mvnw clean package -DskipTests` — produce the shaded uber-JAR artifact |
 
 CI artifacts are downloadable from the GitHub Actions run page:
 - `jacoco-report` — HTML coverage report (14-day retention)
@@ -362,9 +364,6 @@ docker build -t structlab .
 
 # Run in terminal mode
 docker run --rm structlab
-
-# Package only (skip tests)
-docker run --rm structlab mvn -B package -DskipTests
 
 # Extract the built JAR
 docker create --name sl structlab

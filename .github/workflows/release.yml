@@ -22,7 +22,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'   # v0.2.0, v1.0.0-rc1, etc.
+      - 'v*'   # v0.2.0, v1.0.0-rc1, etc.
 
 permissions:
   contents: write   # needed to create GitHub Releases
@@ -59,11 +59,11 @@ jobs:
 
       - name: Set Maven version from tag
         run: |
-          mvn -B -ntp versions:set -DnewVersion=${{ steps.version.outputs.version }}
-          mvn -B -ntp versions:commit
+          ./mvnw -B -ntp versions:set -DnewVersion=${{ steps.version.outputs.version }}
+          ./mvnw -B -ntp versions:commit
 
       - name: Build, test, and package
-        run: mvn -B -ntp clean verify package
+        run: ./mvnw -B -ntp clean verify package
 
       - name: Rename artifact for release
         run: |

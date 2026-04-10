@@ -77,7 +77,7 @@ public class HashRuntimeAdapter extends AbstractRuntimeAdapter {
             case "containskey":
                 if (args.isEmpty()) throw new IllegalArgumentException("Usage: contains <key>");
                 boolean found = tht.containsKey(parseArg(args.get(0)));
-                return success("containsKey", found, tht.traceLog());
+                return success("contains", found, tht.traceLog());
             default:
                 throw new UnsupportedOperationException("Unknown hash table operation: " + operation);
         }
@@ -104,7 +104,7 @@ public class HashRuntimeAdapter extends AbstractRuntimeAdapter {
             case "containskey":
                 if (args.isEmpty()) throw new IllegalArgumentException("Usage: contains <key>");
                 boolean found = thoa.containsKey(parseArg(args.get(0)));
-                return success("containsKey", found, thoa.traceLog());
+                return success("contains", found, thoa.traceLog());
             default:
                 throw new UnsupportedOperationException("Unknown hash table OA operation: " + operation);
         }
@@ -155,27 +155,8 @@ public class HashRuntimeAdapter extends AbstractRuntimeAdapter {
             thoa.unwrap().clear();
         }
         if (activeHash instanceof TracedHashSetCustom ths) {
-            HashSetCustom set = ths.unwrap();
-            while (set.size() > 0) {
-                String snap = set.snapshot();
-                String firstKey = extractFirstKey(snap);
-                if (firstKey == null) break;
-                try {
-                    set.remove(Integer.valueOf(firstKey));
-                } catch (Exception e) {
-                    break;
-                }
-            }
+            ths.unwrap().clear();
         }
         clearTraceHistory();
-    }
-
-    private String extractFirstKey(String snapshot) {
-        // Find first "(key -> " pattern in the snapshot
-        int start = snapshot.indexOf('(');
-        if (start < 0) return null;
-        int arrow = snapshot.indexOf(" -> ", start);
-        if (arrow < 0) return null;
-        return snapshot.substring(start + 1, arrow).trim();
     }
 }

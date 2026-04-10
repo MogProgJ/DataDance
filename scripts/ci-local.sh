@@ -6,11 +6,11 @@
 set -euo pipefail
 
 echo "=== [1/2] Verify (compile + test + coverage) ==="
-mvn -B -ntp clean verify
+./mvnw -B -ntp clean verify
 
 echo ""
 echo "=== [2/2] Package (uber-JAR) ==="
-mvn -B -ntp package -DskipTests
+./mvnw -B -ntp package -DskipTests
 
 echo ""
 echo "=== Done ==="

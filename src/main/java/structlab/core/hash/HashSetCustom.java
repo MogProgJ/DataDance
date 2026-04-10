@@ -37,6 +37,10 @@ public class HashSetCustom<T> implements Traceable {
     return removed != null;
   }
 
+  public void clear() {
+    table.clear();
+  }
+
   @Override
   public String structureName() { return "Hash Set"; }
 
