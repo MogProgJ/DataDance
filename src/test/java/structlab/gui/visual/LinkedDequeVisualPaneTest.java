@@ -1,21 +1,14 @@
 package structlab.gui.visual;
 
-import javafx.application.Platform;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(JavaFxToolkitExtension.class)
 class LinkedDequeVisualPaneTest {
-
-    @BeforeAll
-    static void initToolkit() {
-        try {
-            Platform.startup(() -> {});
-        } catch (IllegalStateException | UnsupportedOperationException ignored) {}
-    }
 
     @Test
     void constructionDoesNotThrow() {

@@ -1,21 +1,12 @@
 package structlab.gui.visual;
 
-import javafx.application.Platform;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@ExtendWith(JavaFxToolkitExtension.class)
 class ComparisonSummaryPaneTest {
-
-    @BeforeAll
-    static void initToolkit() {
-        try {
-            Platform.startup(() -> {});
-        } catch (IllegalStateException | UnsupportedOperationException ignored) {
-            // toolkit already initialised
-        }
-    }
 
     @Test
     void constructionDoesNotThrow() {

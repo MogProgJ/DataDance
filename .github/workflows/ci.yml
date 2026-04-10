@@ -12,7 +12,7 @@ name: CI
 
 on:
   push:
-    branches: [main, Gemini,fe]
+    branches: [main, Gemini]
   pull_request:
     types: [opened, synchronize, reopened]
 
@@ -46,7 +46,7 @@ jobs:
       - name: mvn verify
         run: |
           chmod +x ./mvnw
-          ./mvnw -B -ntp clean verify
+          ./mvnw -B -ntp verify
 
       - name: Upload JaCoCo report
         if: always()
@@ -57,9 +57,11 @@ jobs:
           retention-days: 14
 
   # ── 2. Package ─────────────────────────────────────────────
+  # Only runs on pushes to long-lived branches (not on PRs)
   package:
     name: Package (uber-JAR)
     needs: verify
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -81,7 +83,7 @@ jobs:
       - name: Build package (skip tests — already passed)
         run: |
           chmod +x ./mvnw
-          ./mvnw -B -ntp clean package -DskipTests
+          ./mvnw -B -ntp package -DskipTests -Djacoco.skip=true
 
       - name: Upload packaged JAR
         uses: actions/upload-artifact@v4
