@@ -1381,3 +1381,202 @@
     -fx-padding: 0 6 0 0;
     -fx-alignment: CENTER-LEFT;
 }
+
+/* ══════════════════════════════════════════════════════════
+   Phase 2C2 — Hash Family Visual Panes
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Implementation badge (chaining / open addressing) ──── */
+.hash-impl-badge {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 10px;
+    -fx-text-fill: #f59e0b;
+    -fx-background-color: rgba(245, 158, 11, 0.12);
+    -fx-padding: 2 8 2 8;
+    -fx-background-radius: 6;
+    -fx-border-color: rgba(245, 158, 11, 0.30);
+    -fx-border-radius: 6;
+}
+
+/* ── Hash Set badge (distinct from map-like) ────────────── */
+.hash-set-impl-badge {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 10px;
+    -fx-text-fill: #38bdf8;
+    -fx-background-color: rgba(56, 189, 248, 0.12);
+    -fx-padding: 2 8 2 8;
+    -fx-background-radius: 6;
+    -fx-border-color: rgba(56, 189, 248, 0.30);
+    -fx-border-radius: 6;
+}
+
+/* ── Metrics strip ──────────────────────────────────────── */
+.hash-metrics-strip {
+    -fx-padding: 4 0 4 0;
+}
+
+.hash-metric {
+    -fx-background-color: rgba(245, 158, 11, 0.08);
+    -fx-padding: 2 6 2 6;
+    -fx-background-radius: 4;
+    -fx-border-color: rgba(245, 158, 11, 0.18);
+    -fx-border-radius: 4;
+}
+
+.hash-metric-label {
+    -fx-font-size: 10px;
+    -fx-text-fill: #9ca3af;
+}
+
+.hash-metric-value {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 11px;
+    -fx-text-fill: #fbbf24;
+    -fx-font-weight: bold;
+}
+
+/* ── Bucket grid (chaining + hash set) ──────────────────── */
+.hash-bucket-grid {
+    -fx-padding: 4 0 2 0;
+}
+
+.hash-bucket-row {
+    -fx-padding: 2 0 2 0;
+}
+
+.hash-bucket-row-empty {
+    -fx-opacity: 0.45;
+}
+
+.hash-bucket-index {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 10px;
+    -fx-text-fill: #6b7280;
+    -fx-padding: 0 6 0 0;
+}
+
+.hash-bucket-empty {
+    -fx-font-size: 12px;
+    -fx-text-fill: #374151;
+    -fx-padding: 0 4 0 4;
+}
+
+/* ── Chain entry chips (map-like) ───────────────────────── */
+.hash-entry-chip {
+    -fx-background-color: #1e2530;
+    -fx-border-color: #3b4252;
+    -fx-border-width: 1;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-padding: 2 8 2 8;
+}
+
+.hash-entry-chip:hover {
+    -fx-border-color: #f59e0b;
+    -fx-background-color: rgba(245, 158, 11, 0.08);
+}
+
+.hash-entry-chip-collision {
+    -fx-border-color: #d97706;
+    -fx-background-color: rgba(217, 119, 6, 0.10);
+}
+
+.hash-entry-chip-text {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 11px;
+    -fx-text-fill: #e2e8f0;
+}
+
+.hash-chain-arrow {
+    -fx-font-size: 12px;
+    -fx-text-fill: #d97706;
+    -fx-padding: 0 1 0 1;
+}
+
+/* ── Set member chips ───────────────────────────────────── */
+.hash-set-member-chip {
+    -fx-background-color: #1e2530;
+    -fx-border-color: rgba(56, 189, 248, 0.35);
+    -fx-border-width: 1;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-padding: 2 8 2 8;
+}
+
+.hash-set-member-chip:hover {
+    -fx-border-color: #38bdf8;
+    -fx-background-color: rgba(56, 189, 248, 0.10);
+}
+
+.hash-set-member-text {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 12px;
+    -fx-text-fill: #7dd3fc;
+    -fx-font-weight: bold;
+}
+
+.hash-set-member-sep {
+    -fx-font-size: 12px;
+    -fx-text-fill: #4b5563;
+    -fx-padding: 0 1 0 1;
+}
+
+/* ── Slot grid (open addressing) ────────────────────────── */
+.hash-slot-grid {
+    -fx-padding: 4 0 2 0;
+}
+
+.hash-slot-cell {
+    -fx-background-color: #161b22;
+    -fx-border-color: #2d333b;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 2 4 2 4;
+}
+
+.hash-slot-cell:hover {
+    -fx-border-color: #f59e0b;
+}
+
+.hash-slot-index {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 9px;
+    -fx-text-fill: #4b5563;
+    -fx-alignment: CENTER;
+}
+
+/* ── Slot states ────────────────────────────────────────── */
+.hash-slot-empty {
+    -fx-opacity: 0.40;
+}
+
+.hash-slot-empty-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #374151;
+    -fx-alignment: CENTER;
+}
+
+.hash-slot-occupied {
+    -fx-border-color: #f59e0b;
+    -fx-background-color: rgba(245, 158, 11, 0.10);
+}
+
+.hash-slot-occupied-text {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 10px;
+    -fx-text-fill: #fbbf24;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER;
+}
+
+.hash-slot-deleted {
+    -fx-border-color: #ef4444;
+    -fx-background-color: rgba(239, 68, 68, 0.08);
+}
+
+.hash-slot-deleted-text {
+    -fx-font-size: 12px;
+    -fx-text-fill: #f87171;
+    -fx-alignment: CENTER;
+}

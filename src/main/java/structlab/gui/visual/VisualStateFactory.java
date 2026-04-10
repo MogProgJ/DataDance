@@ -16,6 +16,9 @@ public final class VisualStateFactory {
     private static CircularQueueVisualPane circularQueuePane;
     private static HeapVisualPane heapPane;
     private static PriorityQueueVisualPane priorityQueuePane;
+    private static HashChainingVisualPane hashChainingPane;
+    private static HashOpenAddressingVisualPane hashOpenAddressingPane;
+    private static HashSetVisualPane hashSetPane;
 
     /**
      * Returns true if the given snapshot type has a visual state component.
@@ -26,7 +29,9 @@ public final class VisualStateFactory {
             case "ArrayStack", "LinkedStack",
                  "LinkedQueue", "TwoStackQueue",
                  "CircularArrayQueue",
-                 "BinaryHeap", "HeapPriorityQueue" -> true;
+                 "BinaryHeap", "HeapPriorityQueue",
+                 "HashTableChaining", "HashTableOpenAddressing",
+                 "HashSetCustom" -> true;
             default -> false;
         };
     }
@@ -73,6 +78,21 @@ public final class VisualStateFactory {
                 priorityQueuePane.update(StateModelParser.parseHeapPriorityQueue(snapshot));
                 yield priorityQueuePane;
             }
+            case "HashTableChaining" -> {
+                if (hashChainingPane == null) hashChainingPane = new HashChainingVisualPane();
+                hashChainingPane.update(StateModelParser.parseHashTableChaining(snapshot));
+                yield hashChainingPane;
+            }
+            case "HashTableOpenAddressing" -> {
+                if (hashOpenAddressingPane == null) hashOpenAddressingPane = new HashOpenAddressingVisualPane();
+                hashOpenAddressingPane.update(StateModelParser.parseHashTableOpenAddressing(snapshot));
+                yield hashOpenAddressingPane;
+            }
+            case "HashSetCustom" -> {
+                if (hashSetPane == null) hashSetPane = new HashSetVisualPane();
+                hashSetPane.update(StateModelParser.parseHashSetCustom(snapshot));
+                yield hashSetPane;
+            }
             default -> null;
         };
     }
@@ -87,5 +107,8 @@ public final class VisualStateFactory {
         circularQueuePane = null;
         heapPane = null;
         priorityQueuePane = null;
+        hashChainingPane = null;
+        hashOpenAddressingPane = null;
+        hashSetPane = null;
     }
 }

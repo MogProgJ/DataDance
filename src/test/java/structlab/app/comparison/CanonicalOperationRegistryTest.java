@@ -126,4 +126,42 @@ class CanonicalOperationRegistryTest {
         assertFalse(op.matches("peek"));
         assertFalse(op.matches(null));
     }
+
+    // ── Hash family ─────────────────────────────────────────
+
+    @Test
+    void hashFamilyHasFourCanonicalOps() {
+        var ops = CanonicalOperationRegistry.forFamily("hash");
+        assertEquals(4, ops.size());
+    }
+
+    @Test
+    void hashFamilyHasMappingReturnsTrue() {
+        assertTrue(CanonicalOperationRegistry.hasMapping("hash"));
+    }
+
+    @Test
+    void hashPutResolvesFromInsert() {
+        assertEquals("put", CanonicalOperationRegistry.resolveCanonical("hash", "insert"));
+    }
+
+    @Test
+    void hashPutAndInsertAreEquivalent() {
+        assertTrue(CanonicalOperationRegistry.areEquivalent("hash", "put", "insert"));
+    }
+
+    @Test
+    void hashContainsKeyResolvesFromContains() {
+        assertEquals("containskey", CanonicalOperationRegistry.resolveCanonical("hash", "contains"));
+    }
+
+    @Test
+    void hashRemoveResolvesFromDelete() {
+        assertEquals("remove", CanonicalOperationRegistry.resolveCanonical("hash", "delete"));
+    }
+
+    @Test
+    void registeredFamiliesContainsHash() {
+        assertTrue(CanonicalOperationRegistry.registeredFamilies().contains("hash"));
+    }
 }

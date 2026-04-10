@@ -5,6 +5,8 @@ import structlab.render.SnapshotParser;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Parses raw snapshot strings into typed view models for the visual state components.
@@ -123,5 +125,124 @@ public final class StateModelParser {
     public static HeapStateModel parseHeapPriorityQueue(String snapshot) {
         String heapSnap = SnapshotParser.embeddedSnapshot(snapshot, "heap");
         return parseBinaryHeap(heapSnap);
+    }
+
+    // ── Hash family ─────────────────────────────────────────────────
+
+    private static final Pattern ENTRY_PATTERN = Pattern.compile("\\((.+?)\\s*->\\s*(.+?)\\)");
+
+    /**
+     * Parses a HashTableChaining snapshot into a HashChainingStateModel.
+     * Snapshot: HashTableChaining{size=N, capacity=M, hashType=T, maxChainSize=X, rehashes=Y, buckets=[...]}
+     */
+    public static HashChainingStateModel parseHashTableChaining(String snapshot) {
+        int size = SnapshotParser.intField(snapshot, "size");
+        int capacity = SnapshotParser.intField(snapshot, "capacity");
+        String hashType = SnapshotParser.stringField(snapshot, "hashType");
+        int maxChainSize = SnapshotParser.intField(snapshot, "maxChainSize");
+        int rehashes = SnapshotParser.intField(snapshot, "rehashes");
+
+        List<String> rawBuckets = SnapshotParser.bucketEntries(snapshot);
+        List<HashChainingStateModel.Bucket> buckets = new ArrayList<>();
+
+        for (int i = 0; i < rawBuckets.size(); i++) {
+            String raw = rawBuckets.get(i);
+            // format: "[idx] empty" or "[idx] (k -> v) -> (k2 -> v2)"
+            String content = raw.replaceFirst("^\\[\\d+]\\s*", "");
+            List<HashChainingStateModel.Entry> entries = new ArrayList<>();
+
+            if (!"empty".equals(content)) {
+                Matcher m = ENTRY_PATTERN.matcher(content);
+                while (m.find()) {
+                    entries.add(new HashChainingStateModel.Entry(m.group(1).trim(), m.group(2).trim()));
+                }
+            }
+            buckets.add(new HashChainingStateModel.Bucket(i, Collections.unmodifiableList(entries)));
+        }
+
+        return new HashChainingStateModel(size, capacity, hashType,
+                maxChainSize < 0 ? 0 : maxChainSize,
+                rehashes < 0 ? 0 : rehashes,
+                Collections.unmodifiableList(buckets));
+    }
+
+    /**
+     * Parses a HashTableOpenAddressing snapshot into a HashOpenAddressingStateModel.
+     * Snapshot: HashTableOpenAddressing{size=N, capacity=M, oaType=T, hashType=H, rehashes=Y, slots=[...]}
+     */
+    public static HashOpenAddressingStateModel parseHashTableOpenAddressing(String snapshot) {
+        int size = SnapshotParser.intField(snapshot, "size");
+        int capacity = SnapshotParser.intField(snapshot, "capacity");
+        String oaType = SnapshotParser.stringField(snapshot, "oaType");
+        String hashType = SnapshotParser.stringField(snapshot, "hashType");
+        int rehashes = SnapshotParser.intField(snapshot, "rehashes");
+
+        List<String> rawSlots = SnapshotParser.slotEntries(snapshot);
+        List<HashOpenAddressingStateModel.Slot> slots = new ArrayList<>();
+
+        for (int i = 0; i < rawSlots.size(); i++) {
+            String raw = rawSlots.get(i);
+            String content = raw.replaceFirst("^\\[\\d+]\\s*", "");
+
+            if ("empty".equals(content)) {
+                slots.add(new HashOpenAddressingStateModel.Slot(
+                        i, HashOpenAddressingStateModel.SlotState.EMPTY, null, null));
+            } else if ("DELETED".equals(content)) {
+                slots.add(new HashOpenAddressingStateModel.Slot(
+                        i, HashOpenAddressingStateModel.SlotState.DELETED, null, null));
+            } else {
+                Matcher m = ENTRY_PATTERN.matcher(content);
+                if (m.find()) {
+                    slots.add(new HashOpenAddressingStateModel.Slot(
+                            i, HashOpenAddressingStateModel.SlotState.OCCUPIED,
+                            m.group(1).trim(), m.group(2).trim()));
+                } else {
+                    slots.add(new HashOpenAddressingStateModel.Slot(
+                            i, HashOpenAddressingStateModel.SlotState.EMPTY, null, null));
+                }
+            }
+        }
+
+        return new HashOpenAddressingStateModel(size, capacity, oaType, hashType,
+                rehashes < 0 ? 0 : rehashes,
+                Collections.unmodifiableList(slots));
+    }
+
+    /**
+     * Parses a HashSetCustom snapshot into a HashSetStateModel.
+     * Snapshot: HashSetCustom{size=N, table=HashTableChaining{size=N, capacity=M, ..., buckets=[...]}}
+     * The backing table stores set elements as keys with a sentinel value object.
+     */
+    public static HashSetStateModel parseHashSetCustom(String snapshot) {
+        int size = SnapshotParser.intField(snapshot, "size");
+        String tableSnap = SnapshotParser.embeddedSnapshot(snapshot, "table");
+
+        int capacity = SnapshotParser.intField(tableSnap, "capacity");
+        String hashType = SnapshotParser.stringField(tableSnap, "hashType");
+        int maxChainSize = SnapshotParser.intField(tableSnap, "maxChainSize");
+        int rehashes = SnapshotParser.intField(tableSnap, "rehashes");
+
+        List<String> rawBuckets = SnapshotParser.bucketEntries(tableSnap);
+        List<HashSetStateModel.SetBucket> buckets = new ArrayList<>();
+
+        for (int i = 0; i < rawBuckets.size(); i++) {
+            String raw = rawBuckets.get(i);
+            String content = raw.replaceFirst("^\\[\\d+]\\s*", "");
+            List<String> members = new ArrayList<>();
+
+            if (!"empty".equals(content)) {
+                // Entries are "(element -> sentinel)", extract just the key as the set member
+                Matcher m = ENTRY_PATTERN.matcher(content);
+                while (m.find()) {
+                    members.add(m.group(1).trim());
+                }
+            }
+            buckets.add(new HashSetStateModel.SetBucket(i, Collections.unmodifiableList(members)));
+        }
+
+        return new HashSetStateModel(size, capacity, hashType,
+                maxChainSize < 0 ? 0 : maxChainSize,
+                rehashes < 0 ? 0 : rehashes,
+                Collections.unmodifiableList(buckets));
     }
 }

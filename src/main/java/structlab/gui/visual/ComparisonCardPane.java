@@ -32,6 +32,9 @@ public class ComparisonCardPane extends VBox {
     private CircularQueueVisualPane circularQueuePane;
     private HeapVisualPane heapPane;
     private PriorityQueueVisualPane priorityQueuePane;
+    private HashChainingVisualPane hashChainingPane;
+    private HashOpenAddressingVisualPane hashOpenAddressingPane;
+    private HashSetVisualPane hashSetPane;
 
     public ComparisonCardPane() {
         getStyleClass().add("comparison-card");
@@ -202,6 +205,21 @@ public class ComparisonCardPane extends VBox {
                 if (priorityQueuePane == null) priorityQueuePane = new PriorityQueueVisualPane();
                 priorityQueuePane.update(StateModelParser.parseHeapPriorityQueue(snapshot));
                 yield priorityQueuePane;
+            }
+            case "HashTableChaining" -> {
+                if (hashChainingPane == null) hashChainingPane = new HashChainingVisualPane();
+                hashChainingPane.update(StateModelParser.parseHashTableChaining(snapshot));
+                yield hashChainingPane;
+            }
+            case "HashTableOpenAddressing" -> {
+                if (hashOpenAddressingPane == null) hashOpenAddressingPane = new HashOpenAddressingVisualPane();
+                hashOpenAddressingPane.update(StateModelParser.parseHashTableOpenAddressing(snapshot));
+                yield hashOpenAddressingPane;
+            }
+            case "HashSetCustom" -> {
+                if (hashSetPane == null) hashSetPane = new HashSetVisualPane();
+                hashSetPane.update(StateModelParser.parseHashSetCustom(snapshot));
+                yield hashSetPane;
             }
             default -> null;
         };

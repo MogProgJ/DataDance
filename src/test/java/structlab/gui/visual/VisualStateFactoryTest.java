@@ -59,4 +59,22 @@ class VisualStateFactoryTest {
         assertFalse(VisualStateFactory.isSupported(
                 "SinglyLinkedList{size=2, head=5, chain=[5 -> 10]}"));
     }
+
+    @Test
+    void isSupportedReturnsTrueForHashTableChaining() {
+        assertTrue(VisualStateFactory.isSupported(
+                "HashTableChaining{size=0, capacity=4, buckets=[0: empty, 1: empty, 2: empty, 3: empty]}"));
+    }
+
+    @Test
+    void isSupportedReturnsTrueForHashTableOpenAddressing() {
+        assertTrue(VisualStateFactory.isSupported(
+                "HashTableOpenAddressing{size=0, capacity=8, oaType=LINEAR, hashType=DIVISION, rehashes=0, slots=[0: empty]}"));
+    }
+
+    @Test
+    void isSupportedReturnsTrueForHashSetCustom() {
+        assertTrue(VisualStateFactory.isSupported(
+                "HashSetCustom{size=0, table=HashTableChaining{size=0, capacity=8, buckets=[0: empty]}}"));
+    }
 }

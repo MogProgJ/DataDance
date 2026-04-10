@@ -52,6 +52,14 @@ public final class CanonicalOperationRegistry {
                 new CanonicalOperation("extractmin", Set.of("dequeue", "removemin"), "Remove the minimum element", 0),
                 new CanonicalOperation("peek", Set.of(), "View the minimum element without removal", 0)
         ));
+
+        // ── Hash family (map-like) ──────────────────────────
+        FAMILY_MAP.put("hash", List.of(
+                new CanonicalOperation("put", Set.of("insert", "set"), "Insert or update a key-value pair", 2),
+                new CanonicalOperation("get", Set.of("lookup", "retrieve"), "Retrieve value by key", 1),
+                new CanonicalOperation("remove", Set.of("delete"), "Remove entry by key", 1),
+                new CanonicalOperation("containskey", Set.of("contains", "has"), "Check if key is present", 1)
+        ));
     }
 
     private CanonicalOperationRegistry() {}
