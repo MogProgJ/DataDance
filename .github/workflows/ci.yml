@@ -46,7 +46,7 @@ jobs:
       - name: mvn verify
         run: |
           chmod +x ./mvnw
-          ./mvnw -B -ntp verify
+          xvfb-run --auto-servernum ./mvnw -B -ntp verify
 
       - name: Upload JaCoCo report
         if: always()

@@ -1,6 +1,7 @@
 package structlab.gui.visual;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
@@ -8,6 +9,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(JavaFxToolkitExtension.class)
+@Timeout(10)
 class DynamicArrayVisualPaneTest {
 
     @Test
