@@ -43,6 +43,9 @@
             <Button fx:id="navCompareBtn" text="Compare" styleClass="nav-btn"
                     onAction="#onNavigate" userData="COMPARE" mnemonicParsing="false"
                     maxWidth="Infinity"/>
+            <Button fx:id="navAlgoLabBtn" text="Algo Lab" styleClass="nav-btn"
+                    onAction="#onNavigate" userData="ALGORITHM_LAB" mnemonicParsing="false"
+                    maxWidth="Infinity"/>
             <Button fx:id="navLearnBtn" text="Learn" styleClass="nav-btn"
                     onAction="#onNavigate" userData="LEARN" mnemonicParsing="false"
                     maxWidth="Infinity"/>

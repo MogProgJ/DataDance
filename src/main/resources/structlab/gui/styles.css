@@ -2404,3 +2404,292 @@
     -fx-font-style: italic;
     -fx-padding: 0 0 2 0;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   GRAPH VISUAL PANE + ALGORITHM LAB
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Graph visual pane ─────────────────────────────────── */
+
+.graph-visual-pane {
+    -fx-background-color: #0d1117;
+}
+
+.graph-top-bar {
+    -fx-background-color: #161b22;
+    -fx-border-color: transparent transparent #21262d transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.graph-status-label {
+    -fx-text-fill: #e6edf3;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.graph-step-label {
+    -fx-text-fill: #8b949e;
+    -fx-font-size: 11px;
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+}
+
+.graph-canvas {
+    -fx-background-color: #0d1117;
+    -fx-padding: 16;
+}
+
+/* ── Graph nodes ───────────────────────────────────────── */
+
+.graph-node {
+    -fx-background-radius: 50%;
+    -fx-border-radius: 50%;
+    -fx-border-width: 2;
+    -fx-alignment: CENTER;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 4, 0, 0, 1);
+}
+
+.graph-node-idle {
+    -fx-background-color: #1e2530;
+    -fx-border-color: #3b4252;
+}
+
+.graph-node-current {
+    -fx-background-color: #2d1b69;
+    -fx-border-color: #7c3aed;
+    -fx-border-width: 2.5;
+    -fx-effect: dropshadow(gaussian, rgba(124,58,237,0.5), 12, 0, 0, 0);
+}
+
+.graph-node-frontier {
+    -fx-background-color: #1a2332;
+    -fx-border-color: #58a6ff;
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(88,166,255,0.25), 6, 0, 0, 0);
+}
+
+.graph-node-visited {
+    -fx-background-color: #0d2818;
+    -fx-border-color: #3fb950;
+    -fx-border-width: 2;
+}
+
+.graph-node-label {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #e6edf3;
+}
+
+.graph-node-label-current {
+    -fx-text-fill: #c4b5fd;
+}
+
+/* ── Graph edges ───────────────────────────────────────── */
+
+.graph-edge {
+    -fx-stroke-width: 1.5;
+    -fx-stroke-line-cap: round;
+}
+
+.graph-edge-default {
+    -fx-stroke: #3b4252;
+}
+
+.graph-edge-tree {
+    -fx-stroke: #7c3aed;
+    -fx-stroke-width: 2.5;
+    -fx-opacity: 0.8;
+}
+
+.graph-arrow-default {
+    -fx-fill: #3b4252;
+}
+
+.graph-arrow-tree {
+    -fx-fill: #7c3aed;
+    -fx-opacity: 0.8;
+}
+
+/* ── Graph legend bar ──────────────────────────────────── */
+
+.graph-legend-bar {
+    -fx-background-color: #161b22;
+    -fx-border-color: #21262d transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+.graph-legend-dot {
+    -fx-background-radius: 50%;
+    -fx-border-radius: 50%;
+}
+
+.graph-legend-current {
+    -fx-background-color: #7c3aed;
+}
+
+.graph-legend-frontier {
+    -fx-background-color: #58a6ff;
+}
+
+.graph-legend-visited {
+    -fx-background-color: #3fb950;
+}
+
+.graph-legend-idle {
+    -fx-background-color: #3b4252;
+}
+
+.graph-legend-tree-edge {
+    -fx-background-color: #7c3aed;
+    -fx-background-radius: 2;
+    -fx-border-radius: 2;
+    -fx-pref-width: 20;
+    -fx-pref-height: 3;
+    -fx-min-width: 20;
+    -fx-min-height: 3;
+    -fx-max-height: 3;
+}
+
+.graph-legend-text {
+    -fx-text-fill: #8b949e;
+    -fx-font-size: 10px;
+}
+
+/* ── Algorithm Lab control panel ───────────────────────── */
+
+.algo-control-panel {
+    -fx-background-color: #161b22;
+    -fx-border-color: transparent #21262d transparent transparent;
+    -fx-border-width: 0 1 0 0;
+}
+
+.algo-section {
+    -fx-padding: 0;
+}
+
+.algo-section-body {
+    -fx-padding: 4 0 0 0;
+}
+
+.algo-combo {
+    -fx-background-color: #21262d;
+    -fx-text-fill: #e6edf3;
+    -fx-border-color: #30363d;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 10;
+    -fx-font-size: 12px;
+}
+
+.algo-combo .list-cell {
+    -fx-text-fill: #e6edf3;
+    -fx-background-color: #21262d;
+    -fx-font-size: 12px;
+}
+
+.algo-combo .list-view {
+    -fx-background-color: #21262d;
+}
+
+.algo-combo .list-view .list-cell:hover {
+    -fx-background-color: #282e36;
+}
+
+.algo-preset-desc {
+    -fx-text-fill: #8b949e;
+    -fx-font-size: 11px;
+    -fx-padding: 4 0 0 0;
+}
+
+/* ── Algorithm Lab playback bar ────────────────────────── */
+
+.algo-playback-bar {
+    -fx-background-color: #161b22;
+    -fx-border-color: #21262d transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+    -fx-min-height: 48;
+}
+
+.algo-playback-btn {
+    -fx-background-color: #21262d;
+    -fx-text-fill: #e6edf3;
+    -fx-border-color: #30363d;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 10;
+    -fx-font-size: 13px;
+    -fx-cursor: hand;
+    -fx-min-width: 36;
+    -fx-min-height: 32;
+}
+
+.algo-playback-btn:hover {
+    -fx-background-color: #282e36;
+    -fx-border-color: #484f58;
+}
+
+.algo-playback-btn:disabled {
+    -fx-opacity: 0.35;
+}
+
+.algo-frame-label {
+    -fx-text-fill: #8b949e;
+    -fx-font-size: 11px;
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+}
+
+.algo-speed-slider {
+    -fx-padding: 0 4;
+}
+
+.algo-speed-slider .track {
+    -fx-background-color: #30363d;
+    -fx-pref-height: 4;
+    -fx-background-radius: 2;
+}
+
+.algo-speed-slider .thumb {
+    -fx-background-color: #7c3aed;
+    -fx-background-radius: 50%;
+    -fx-pref-width: 14;
+    -fx-pref-height: 14;
+}
+
+.algo-speed-label {
+    -fx-text-fill: #8b949e;
+    -fx-font-size: 11px;
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-min-width: 32;
+}
+
+/* ── Algorithm Lab info panel ──────────────────────────── */
+
+.algo-info-panel {
+    -fx-background-color: #161b22;
+    -fx-border-color: transparent transparent transparent #21262d;
+    -fx-border-width: 0 0 0 1;
+}
+
+.algo-status-msg {
+    -fx-text-fill: #e6edf3;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 6 0;
+}
+
+.algo-info-label {
+    -fx-text-fill: #6e7681;
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+    -fx-padding: 6 0 2 0;
+}
+
+.algo-info-value {
+    -fx-text-fill: #8b949e;
+    -fx-font-size: 11px;
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+}
+
+.algo-workspace-content {
+    -fx-background-color: #0d1117;
+}

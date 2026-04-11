@@ -39,6 +39,7 @@ public class MainWindowController {
 
     @FXML private Button navExploreBtn;
     @FXML private Button navCompareBtn;
+    @FXML private Button navAlgoLabBtn;
     @FXML private Button navLearnBtn;
     @FXML private Button navActivityBtn;
     @FXML private Button navSettingsBtn;
@@ -97,7 +98,7 @@ public class MainWindowController {
     @FXML
     public void initialize() {
         navButtons = new Button[]{
-            navExploreBtn, navCompareBtn, navLearnBtn, navActivityBtn, navSettingsBtn
+            navExploreBtn, navCompareBtn, navAlgoLabBtn, navLearnBtn, navActivityBtn, navSettingsBtn
         };
     }
 
@@ -183,6 +184,7 @@ public class MainWindowController {
         pageCache.put(NavigationPage.EXPLORE
             , buildExplorePage());
         pageCache.put(NavigationPage.COMPARE, buildComparePage());
+        pageCache.put(NavigationPage.ALGORITHM_LAB, buildAlgorithmLabPage());
         pageCache.put(NavigationPage.LEARN, buildLearnPage());
         pageCache.put(NavigationPage.ACTIVITY, buildActivityPage());
         pageCache.put(NavigationPage.SETTINGS, buildSettingsPage());
@@ -872,6 +874,15 @@ public class MainWindowController {
         cmpHistory.getItems().clear();
         cmpArgField.clear();
         setCompareSessionButtons(false);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    //  ALGORITHM LAB PAGE
+    // ─────────────────────────────────────────────────────────
+
+    private Node buildAlgorithmLabPage() {
+        AlgorithmLabController algoLab = new AlgorithmLabController();
+        return algoLab.buildWorkspace();
     }
 
     // ─────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ package structlab.gui;
 public enum NavigationPage {
     EXPLORE("Explore", "Browse and simulate data structures"),
     COMPARE("Compare", "Side-by-side implementation analysis"),
+    ALGORITHM_LAB("Algorithm Lab", "Graph algorithm visualization and step-through"),
     LEARN("Learn", "Data structure reference library"),
     ACTIVITY("Activity", "Session history and recent actions"),
     SETTINGS("Settings", "Application preferences");

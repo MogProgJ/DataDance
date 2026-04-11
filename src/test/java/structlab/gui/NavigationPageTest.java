@@ -17,8 +17,8 @@ class NavigationPageTest {
     }
 
     @Test
-    void fivePagesExist() {
-        assertEquals(5, NavigationPage.values().length);
+    void sixPagesExist() {
+        assertEquals(6, NavigationPage.values().length);
     }
 
     @Test
