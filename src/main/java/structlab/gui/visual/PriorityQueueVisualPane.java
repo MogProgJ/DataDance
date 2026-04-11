@@ -4,6 +4,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
+import structlab.gui.visual.tree.TreeCanvas;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,19 +12,24 @@ import java.util.List;
 
 /**
  * Visual state component for HeapPriorityQueue — the ADT/behavior lens.
- * Emphasizes queue semantics: next-out item, priority ordering, enqueue/dequeue.
- * Shows the underlying heap implementation as a secondary, collapsed detail.
+ *
+ * <p>Top section: queue semantics (next-out, priority ordering).</p>
+ * <p>Lower section: heap backing — a proper tree visual using {@link TreeCanvas}
+ * plus an optional array strip, making the heap-backed implementation visible
+ * without duplicating BinaryHeap's emphasis.</p>
  */
 public class PriorityQueueVisualPane extends VBox {
 
     private final Label sizeLabel;
     private final Label nextOutValue;
     private final HBox priorityStrip;
-    private final VBox heapDetailSection;
-    private final VBox heapDetailContent;
-    private final Label heapDetailToggle;
+    private final VBox heapBackingSection;
+    private final TreeCanvas heapTree;
+    private final HBox heapArrayStrip;
+    private final Label heapBackingToggle;
+    private final VBox heapBackingContent;
     private final Label emptyLabel;
-    private boolean heapDetailExpanded = false;
+    private boolean heapBackingExpanded = true;
 
     public PriorityQueueVisualPane() {
         setSpacing(10);
@@ -67,18 +73,26 @@ public class PriorityQueueVisualPane extends VBox {
 
         stripWrapper.getChildren().addAll(stripLabel, priorityStrip);
 
-        // ── Heap detail (collapsed by default) ──────
-        heapDetailToggle = new Label("▸ Heap internals");
-        heapDetailToggle.getStyleClass().add("pq-heap-detail-toggle");
-        heapDetailToggle.setOnMouseClicked(e -> toggleHeapDetail());
+        // ── Heap backing section (expanded by default) ──
+        heapBackingToggle = new Label("▾ Heap Backing");
+        heapBackingToggle.getStyleClass().add("pq-heap-detail-toggle");
+        heapBackingToggle.setOnMouseClicked(e -> toggleHeapBacking());
 
-        heapDetailContent = new VBox(4);
-        heapDetailContent.getStyleClass().add("pq-heap-detail-content");
-        heapDetailContent.setVisible(false);
-        heapDetailContent.setManaged(false);
+        Label heapNote = new Label("Implemented with BinaryHeap — tree structure shown below");
+        heapNote.getStyleClass().add("pq-heap-note");
 
-        heapDetailSection = new VBox(2, heapDetailToggle, heapDetailContent);
-        heapDetailSection.getStyleClass().add("pq-heap-detail-section");
+        heapTree = new TreeCanvas();
+        heapTree.getStyleClass().add("pq-heap-tree");
+
+        heapArrayStrip = new HBox(2);
+        heapArrayStrip.setAlignment(Pos.CENTER_LEFT);
+        heapArrayStrip.getStyleClass().add("pq-heap-array");
+
+        heapBackingContent = new VBox(6, heapNote, heapTree, heapArrayStrip);
+        heapBackingContent.getStyleClass().add("pq-heap-detail-content");
+
+        heapBackingSection = new VBox(2, heapBackingToggle, heapBackingContent);
+        heapBackingSection.getStyleClass().add("pq-heap-detail-section");
 
         // ── Empty state ─────────────────────────────
         emptyLabel = new Label("Empty priority queue");
@@ -86,18 +100,19 @@ public class PriorityQueueVisualPane extends VBox {
         emptyLabel.setMaxWidth(Double.MAX_VALUE);
         emptyLabel.setAlignment(Pos.CENTER);
 
-        getChildren().addAll(header, nextOutSection, stripWrapper, heapDetailSection);
+        getChildren().addAll(header, nextOutSection, stripWrapper, heapBackingSection);
     }
 
     public void update(HeapStateModel model) {
         priorityStrip.getChildren().clear();
-        heapDetailContent.getChildren().clear();
+        heapArrayStrip.getChildren().clear();
         sizeLabel.setText("Size: " + model.size());
 
         if (model.isEmpty()) {
             nextOutValue.setText("—");
             priorityStrip.getChildren().add(emptyLabel);
-            collapseHeapDetail();
+            heapTree.getChildren().clear();
+            collapseHeapBacking();
             return;
         }
 
@@ -105,7 +120,6 @@ public class PriorityQueueVisualPane extends VBox {
         nextOutValue.setText(model.minValue());
 
         // ── Build priority order strip ──────────────
-        // Sort a copy of the elements to show priority ordering
         List<String> sorted = sortedByPriority(model.elements());
         for (int i = 0; i < sorted.size(); i++) {
             String value = sorted.get(i);
@@ -123,7 +137,6 @@ public class PriorityQueueVisualPane extends VBox {
 
             priorityStrip.getChildren().add(chip);
 
-            // Add arrow between chips
             if (i < sorted.size() - 1) {
                 Label arrow = new Label("›");
                 arrow.getStyleClass().add("pq-chip-arrow");
@@ -131,13 +144,13 @@ public class PriorityQueueVisualPane extends VBox {
             }
         }
 
-        // ── Build heap detail (array in heap order) ─
-        buildHeapDetail(model);
+        // ── Build heap backing tree + array ─────────
+        heapTree.renderHeapTree(model.elements(), true);
+        buildHeapArray(model);
     }
 
     /**
      * Sorts elements by numeric value for priority display.
-     * Falls back to string comparison if not numeric.
      */
     static List<String> sortedByPriority(List<String> elements) {
         List<String> sorted = new ArrayList<>(elements);
@@ -151,15 +164,11 @@ public class PriorityQueueVisualPane extends VBox {
         return Collections.unmodifiableList(sorted);
     }
 
-    private void buildHeapDetail(HeapStateModel model) {
-        // Backing array in heap order
-        HBox arrayRow = new HBox(2);
-        arrayRow.setAlignment(Pos.CENTER_LEFT);
-
-        Label arrLabel = new Label("Backing array");
+    private void buildHeapArray(HeapStateModel model) {
+        Label arrLabel = new Label("Array");
         arrLabel.getStyleClass().add("pq-detail-label");
-        arrLabel.setMinWidth(90);
-        arrayRow.getChildren().add(arrLabel);
+        arrLabel.setMinWidth(40);
+        heapArrayStrip.getChildren().add(arrLabel);
 
         for (int i = 0; i < model.elements().size(); i++) {
             VBox slot = new VBox(1);
@@ -181,24 +190,22 @@ public class PriorityQueueVisualPane extends VBox {
             cell.getChildren().add(valLabel);
 
             slot.getChildren().addAll(idxLabel, cell);
-            arrayRow.getChildren().add(slot);
+            heapArrayStrip.getChildren().add(slot);
         }
-
-        heapDetailContent.getChildren().add(arrayRow);
     }
 
-    private void toggleHeapDetail() {
-        heapDetailExpanded = !heapDetailExpanded;
-        heapDetailContent.setVisible(heapDetailExpanded);
-        heapDetailContent.setManaged(heapDetailExpanded);
-        heapDetailToggle.setText(heapDetailExpanded
-                ? "▾ Heap internals" : "▸ Heap internals");
+    private void toggleHeapBacking() {
+        heapBackingExpanded = !heapBackingExpanded;
+        heapBackingContent.setVisible(heapBackingExpanded);
+        heapBackingContent.setManaged(heapBackingExpanded);
+        heapBackingToggle.setText(heapBackingExpanded
+                ? "▾ Heap Backing" : "▸ Heap Backing");
     }
 
-    private void collapseHeapDetail() {
-        heapDetailExpanded = false;
-        heapDetailContent.setVisible(false);
-        heapDetailContent.setManaged(false);
-        heapDetailToggle.setText("▸ Heap internals");
+    private void collapseHeapBacking() {
+        heapBackingExpanded = false;
+        heapBackingContent.setVisible(false);
+        heapBackingContent.setManaged(false);
+        heapBackingToggle.setText("▸ Heap Backing");
     }
 }

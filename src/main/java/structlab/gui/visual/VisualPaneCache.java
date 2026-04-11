@@ -21,6 +21,7 @@ public final class VisualPaneCache {
 
     private StackVisualPane stackPane;
     private QueueVisualPane queuePane;
+    private TwoStackQueueVisualPane twoStackQueuePane;
     private CircularQueueVisualPane circularQueuePane;
     private HeapVisualPane heapPane;
     private PriorityQueueVisualPane priorityQueuePane;
@@ -46,6 +47,11 @@ public final class VisualPaneCache {
             if (stackPane == null) stackPane = new StackVisualPane();
             stackPane.update(m);
             return stackPane;
+        }
+        if (state instanceof TwoStackQueueStateModel m) {
+            if (twoStackQueuePane == null) twoStackQueuePane = new TwoStackQueueVisualPane();
+            twoStackQueuePane.update(m);
+            return twoStackQueuePane;
         }
         if (state instanceof QueueStateModel m) {
             if (queuePane == null) queuePane = new QueueVisualPane();
@@ -126,6 +132,7 @@ public final class VisualPaneCache {
     public void reset() {
         stackPane = null;
         queuePane = null;
+        twoStackQueuePane = null;
         circularQueuePane = null;
         heapPane = null;
         priorityQueuePane = null;

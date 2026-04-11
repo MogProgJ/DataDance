@@ -89,16 +89,21 @@ class StateModelParserTest {
                 "FixedArray{size=0, capacity=4, elements=[], raw=[null, null, null, null]}"));
         assertInstanceOf(DynamicArrayStateModel.class, StateModelParser.parse(
                 "DynamicArray{size=0, capacity=4, elements=[], raw=[null, null, null, null]}"));
+        assertInstanceOf(TwoStackQueueStateModel.class, StateModelParser.parse(
+                "TwoStackQueue{size=0, inbox=ArrayStack{size=0, top=null, elements=DynamicArray{size=0, capacity=4, elements=[], raw=[null, null, null, null]}}, outbox=ArrayStack{size=0, top=null, elements=DynamicArray{size=0, capacity=4, elements=[], raw=[null, null, null, null]}}}"));
     }
 
     @Test
     void allStateModelsImplementVisualState() {
         var stack = new StackStateModel(List.of(), 0, "null");
         var queue = new QueueStateModel(List.of(), 0, "null", "null");
+        var tsq = new TwoStackQueueStateModel(List.of(), List.of(), List.of(), 0, "null", "null");
         assertInstanceOf(VisualState.class, stack);
         assertInstanceOf(VisualState.class, queue);
+        assertInstanceOf(VisualState.class, tsq);
         assertTrue(stack.isEmpty());
         assertTrue(queue.isEmpty());
+        assertTrue(tsq.isEmpty());
     }
 
     @Test
@@ -212,9 +217,11 @@ class StateModelParserTest {
     @Test
     void parseTwoStackQueueEmpty() {
         String snap = "TwoStackQueue{size=0, inbox=ArrayStack{size=0, top=null, elements=DynamicArray{size=0, capacity=4, elements=[], raw=[null, null, null, null]}}, outbox=ArrayStack{size=0, top=null, elements=DynamicArray{size=0, capacity=4, elements=[], raw=[null, null, null, null]}}}";
-        QueueStateModel model = StateModelParser.parseTwoStackQueue(snap);
+        TwoStackQueueStateModel model = StateModelParser.parseTwoStackQueue(snap);
         assertEquals(0, model.size());
-        assertTrue(model.elements().isEmpty());
+        assertTrue(model.queueOrder().isEmpty());
+        assertTrue(model.inboxElements().isEmpty());
+        assertTrue(model.outboxElements().isEmpty());
         assertTrue(model.isEmpty());
     }
 
@@ -222,10 +229,12 @@ class StateModelParserTest {
     void parseTwoStackQueueWithInboxOnly() {
         // Items enqueued but no dequeue yet: inbox has elements, outbox empty
         String snap = "TwoStackQueue{size=2, inbox=ArrayStack{size=2, top=20, elements=DynamicArray{size=2, capacity=4, elements=[10, 20], raw=[10, 20, null, null]}}, outbox=ArrayStack{size=0, top=null, elements=DynamicArray{size=0, capacity=4, elements=[], raw=[null, null, null, null]}}}";
-        QueueStateModel model = StateModelParser.parseTwoStackQueue(snap);
+        TwoStackQueueStateModel model = StateModelParser.parseTwoStackQueue(snap);
         assertEquals(2, model.size());
         // Queue order: outbox reversed (empty) + inbox = [10, 20]
-        assertEquals(List.of("10", "20"), model.elements());
+        assertEquals(List.of("10", "20"), model.queueOrder());
+        assertEquals(List.of("10", "20"), model.inboxElements());
+        assertTrue(model.outboxElements().isEmpty());
         assertEquals("10", model.front());
         assertEquals("20", model.rear());
     }
@@ -234,10 +243,12 @@ class StateModelParserTest {
     void parseTwoStackQueueWithOutboxOnly() {
         // After transfer: outbox has elements top-to-bottom, inbox empty
         String snap = "TwoStackQueue{size=2, inbox=ArrayStack{size=0, top=null, elements=DynamicArray{size=0, capacity=4, elements=[], raw=[null, null, null, null]}}, outbox=ArrayStack{size=2, top=10, elements=DynamicArray{size=2, capacity=4, elements=[20, 10], raw=[20, 10, null, null]}}}";
-        QueueStateModel model = StateModelParser.parseTwoStackQueue(snap);
+        TwoStackQueueStateModel model = StateModelParser.parseTwoStackQueue(snap);
         assertEquals(2, model.size());
         // Queue order: outbox elements=[20, 10] reversed = [10, 20] + inbox (empty)
-        assertEquals(List.of("10", "20"), model.elements());
+        assertEquals(List.of("10", "20"), model.queueOrder());
+        assertTrue(model.inboxElements().isEmpty());
+        assertEquals(List.of("20", "10"), model.outboxElements());
         assertEquals("10", model.front());
         assertEquals("20", model.rear());
     }

@@ -2089,3 +2089,318 @@
     -fx-font-weight: bold;
     -fx-opacity: 0.60;
 }
+
+
+/* ══════════════════════════════════════════════════════════
+   Phase 3A — Tree/Graph Foundation Primitives
+   ══════════════════════════════════════════════════════════ */
+
+.tree-canvas {
+    -fx-padding: 6 0 4 0;
+}
+
+.tree-node {
+    -fx-background-color: #1e2530;
+    -fx-border-color: #3b4252;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 20;
+    -fx-background-radius: 20;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.25), 4, 0, 0, 1);
+}
+
+.tree-node-emphasis {
+    -fx-border-color: #7c3aed;
+    -fx-background-color: rgba(124, 58, 237, 0.14);
+    -fx-effect: dropshadow(gaussian, rgba(124, 58, 237, 0.30), 8, 0, 0, 1);
+}
+
+.tree-node-value {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 13px;
+    -fx-text-fill: #e2e8f0;
+    -fx-font-weight: bold;
+}
+
+.tree-node-value-emphasis {
+    -fx-text-fill: #c4b5fd;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Phase 3A — Stack Implementation Distinction
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Implementation badges ──────────────────────────────── */
+.stack-impl-badge {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 10px;
+    -fx-padding: 2 8 2 8;
+    -fx-background-radius: 6;
+    -fx-border-radius: 6;
+}
+
+.stack-impl-badge-array {
+    -fx-text-fill: #22d3ee;
+    -fx-background-color: rgba(34, 211, 238, 0.12);
+    -fx-border-color: rgba(34, 211, 238, 0.30);
+}
+
+.stack-impl-badge-linked {
+    -fx-text-fill: #f472b6;
+    -fx-background-color: rgba(244, 114, 182, 0.12);
+    -fx-border-color: rgba(244, 114, 182, 0.30);
+}
+
+/* ── Array Stack specific ───────────────────────────────── */
+.stack-array-index {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 10px;
+    -fx-text-fill: #4b5563;
+}
+
+.stack-cell-array {
+    -fx-border-style: solid;
+}
+
+/* ── Linked Stack specific ──────────────────────────────── */
+.stack-linked-ref {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 11px;
+    -fx-text-fill: #f472b6;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-padding: 0 0 2 0;
+}
+
+.stack-cell-linked {
+    -fx-background-color: #1a1f2e;
+    -fx-border-color: #3b4252;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+.stack-cell-linked.stack-cell-top {
+    -fx-border-color: #a78bfa;
+    -fx-background-color: rgba(167, 139, 250, 0.12);
+}
+
+.stack-linked-next-label {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 9px;
+    -fx-text-fill: #4b5563;
+    -fx-padding: 0 0 0 4;
+}
+
+.stack-linked-arrow {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 11px;
+    -fx-text-fill: #6b7280;
+    -fx-alignment: center;
+    -fx-padding: -2 0 -2 0;
+    -fx-line-spacing: -4;
+}
+
+.stack-linked-null {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 11px;
+    -fx-text-fill: #4b5563;
+    -fx-alignment: center;
+    -fx-padding: -2 0 0 0;
+    -fx-line-spacing: -4;
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   Phase 3A — Two-Stack Queue Visual
+   ══════════════════════════════════════════════════════════ */
+
+.tsq-impl-badge {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 10px;
+    -fx-text-fill: #fbbf24;
+    -fx-background-color: rgba(251, 191, 36, 0.12);
+    -fx-padding: 2 8 2 8;
+    -fx-background-radius: 6;
+    -fx-border-color: rgba(251, 191, 36, 0.30);
+    -fx-border-radius: 6;
+}
+
+/* ── Stack sections ─────────────────────────────────────── */
+.tsq-stack-section {
+    -fx-background-color: rgba(30, 37, 48, 0.6);
+    -fx-border-color: #2d333b;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 8;
+}
+
+.tsq-stack-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #e2e8f0;
+    -fx-font-weight: bold;
+}
+
+.tsq-stack-direction {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 9px;
+    -fx-text-fill: #6b7280;
+    -fx-font-style: italic;
+}
+
+.tsq-stack-count {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 10px;
+    -fx-text-fill: #6b7280;
+}
+
+.tsq-stack-container {
+    -fx-padding: 4 0 0 0;
+    -fx-min-height: 40;
+}
+
+.tsq-stack-empty {
+    -fx-font-size: 11px;
+    -fx-text-fill: #4b5563;
+    -fx-font-style: italic;
+    -fx-alignment: center;
+    -fx-padding: 8 0;
+}
+
+/* ── Stack cells ────────────────────────────────────────── */
+.tsq-cell {
+    -fx-background-color: #21262d;
+    -fx-border-color: #30363d;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-alignment: center;
+}
+
+.tsq-cell-inbox {
+    -fx-border-color: rgba(251, 191, 36, 0.40);
+}
+
+.tsq-cell-outbox {
+    -fx-border-color: rgba(52, 211, 153, 0.40);
+}
+
+.tsq-cell-top {
+    -fx-background-color: rgba(124, 58, 237, 0.15);
+    -fx-border-color: #7c3aed;
+}
+
+.tsq-cell-value {
+    -fx-text-fill: #e6edf3;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+}
+
+.tsq-marker {
+    -fx-text-fill: transparent;
+    -fx-font-size: 9px;
+}
+
+.tsq-marker-top {
+    -fx-text-fill: #a78bfa;
+    -fx-font-weight: bold;
+}
+
+.tsq-marker-bottom {
+    -fx-text-fill: #6e7681;
+}
+
+.tsq-plate {
+    -fx-background-color: #30363d;
+    -fx-background-radius: 2;
+}
+
+/* ── Transfer arrow ─────────────────────────────────────── */
+.tsq-transfer-arrow {
+    -fx-font-size: 18px;
+    -fx-text-fill: #6b7280;
+    -fx-font-weight: bold;
+}
+
+.tsq-transfer-note {
+    -fx-font-size: 9px;
+    -fx-text-fill: #4b5563;
+    -fx-font-style: italic;
+}
+
+/* ── Effective queue section ────────────────────────────── */
+.tsq-queue-section {
+    -fx-border-color: #2d333b;
+    -fx-border-width: 1 0 0 0;
+    -fx-padding: 8 0 0 0;
+}
+
+.tsq-queue-label {
+    -fx-font-size: 10px;
+    -fx-text-fill: #6b7280;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 4 0;
+}
+
+.tsq-queue-container {
+    -fx-padding: 4 0;
+}
+
+.tsq-queue-chip {
+    -fx-background-color: #1e2530;
+    -fx-border-color: #3b4252;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 3 8 3 8;
+}
+
+.tsq-queue-chip-front {
+    -fx-border-color: #3fb950;
+    -fx-background-color: rgba(63, 185, 80, 0.12);
+}
+
+.tsq-queue-chip-rear {
+    -fx-border-color: #d29922;
+    -fx-background-color: rgba(210, 153, 34, 0.12);
+}
+
+.tsq-queue-chip-value {
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+    -fx-font-size: 12px;
+    -fx-text-fill: #e2e8f0;
+    -fx-font-weight: bold;
+}
+
+.tsq-queue-arrow {
+    -fx-text-fill: #6e7681;
+    -fx-font-size: 13px;
+    -fx-alignment: center;
+}
+
+.tsq-queue-direction {
+    -fx-font-size: 10px;
+    -fx-text-fill: #6e7681;
+    -fx-font-style: italic;
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   Phase 3A — Priority Queue Heap Backing Enhancement
+   ══════════════════════════════════════════════════════════ */
+
+.pq-heap-tree {
+    -fx-padding: 4 0 2 0;
+}
+
+.pq-heap-array {
+    -fx-padding: 2 0;
+}
+
+.pq-heap-note {
+    -fx-font-size: 10px;
+    -fx-text-fill: #4b5563;
+    -fx-font-style: italic;
+    -fx-padding: 0 0 2 0;
+}

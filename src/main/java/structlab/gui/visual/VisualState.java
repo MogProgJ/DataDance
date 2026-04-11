@@ -16,6 +16,7 @@ package structlab.gui.visual;
 public sealed interface VisualState permits
         StackStateModel,
         QueueStateModel,
+        TwoStackQueueStateModel,
         CircularQueueStateModel,
         HeapStateModel,
         HashChainingStateModel,

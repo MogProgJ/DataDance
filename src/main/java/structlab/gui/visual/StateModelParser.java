@@ -61,7 +61,7 @@ public final class StateModelParser {
         String top = SnapshotParser.stringField(snapshot, "top");
         String embedded = SnapshotParser.embeddedSnapshot(snapshot, "elements");
         List<String> elements = SnapshotParser.listField(embedded, "elements");
-        return new StackStateModel(elements, size, top);
+        return new StackStateModel(elements, size, top, "ArrayStack");
     }
 
     /**
@@ -75,7 +75,7 @@ public final class StateModelParser {
         List<String> chain = SnapshotParser.chainField(snapshot, "chain");
         List<String> bottomToTop = new ArrayList<>(chain);
         Collections.reverse(bottomToTop);
-        return new StackStateModel(bottomToTop, size, top);
+        return new StackStateModel(bottomToTop, size, top, "LinkedStack");
     }
 
     /**
@@ -104,11 +104,11 @@ public final class StateModelParser {
     }
 
     /**
-     * Parses a TwoStackQueue snapshot into a QueueStateModel.
+     * Parses a TwoStackQueue snapshot into a TwoStackQueueStateModel.
      * Snapshot: TwoStackQueue{size=N, inbox=ArrayStack{...}, outbox=ArrayStack{...}}
-     * Queue order is: outbox (top-to-bottom) then inbox (bottom-to-top).
+     * Preserves both stacks plus the effective queue order.
      */
-    public static QueueStateModel parseTwoStackQueue(String snapshot) {
+    public static TwoStackQueueStateModel parseTwoStackQueue(String snapshot) {
         int size = SnapshotParser.intField(snapshot, "size");
         String inboxSnap = SnapshotParser.embeddedSnapshot(snapshot, "inbox");
         String outboxSnap = SnapshotParser.embeddedSnapshot(snapshot, "outbox");
@@ -128,7 +128,11 @@ public final class StateModelParser {
         String front = queueOrder.isEmpty() ? "null" : queueOrder.get(0);
         String rear = queueOrder.isEmpty() ? "null" : queueOrder.get(queueOrder.size() - 1);
 
-        return new QueueStateModel(queueOrder, size, front, rear);
+        return new TwoStackQueueStateModel(
+                Collections.unmodifiableList(inboxElements),
+                Collections.unmodifiableList(new ArrayList<>(outboxElements)),
+                Collections.unmodifiableList(queueOrder),
+                size, front, rear);
     }
 
     // ── Heap family ─────────────────────────────────────────────────

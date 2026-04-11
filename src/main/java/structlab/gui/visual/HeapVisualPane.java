@@ -4,17 +4,18 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
+import structlab.gui.visual.tree.TreeCanvas;
 
 /**
- * Visual state component for Heap and Priority Queue structures.
- * Shows a tree-level layout at the top and the backing array below,
- * with the root/min element prominently highlighted.
+ * Visual state component for Heap structures.
+ * Shows a proper tree visual using the reusable {@link TreeCanvas} at the top
+ * and the backing array strip below, with the root/min element prominently highlighted.
  */
 public class HeapVisualPane extends VBox {
 
     private final Label sizeLabel;
     private final Label minLabel;
-    private final VBox treeLevels;
+    private final TreeCanvas treeCanvas;
     private final HBox arrayStrip;
     private final Label emptyLabel;
 
@@ -36,10 +37,9 @@ public class HeapVisualPane extends VBox {
         minLabel.getStyleClass().addAll("heap-min-badge");
         header.getChildren().addAll(title, spacer, minLabel, sizeLabel);
 
-        // ── Tree level display ──────────────────────
-        treeLevels = new VBox(4);
-        treeLevels.setAlignment(Pos.TOP_CENTER);
-        treeLevels.getStyleClass().add("heap-tree-section");
+        // ── Tree visual (using reusable TreeCanvas) ──
+        treeCanvas = new TreeCanvas();
+        treeCanvas.getStyleClass().add("heap-tree-section");
 
         // ── Array strip ─────────────────────────────
         arrayStrip = new HBox(2);
@@ -52,74 +52,27 @@ public class HeapVisualPane extends VBox {
         emptyLabel.setMaxWidth(Double.MAX_VALUE);
         emptyLabel.setAlignment(Pos.CENTER);
 
-        getChildren().addAll(header, treeLevels, arrayStrip);
+        getChildren().addAll(header, treeCanvas, arrayStrip);
     }
 
     public void update(HeapStateModel model) {
-        treeLevels.getChildren().clear();
         arrayStrip.getChildren().clear();
         sizeLabel.setText("Size: " + model.size());
 
         if (model.isEmpty()) {
             minLabel.setText("");
-            treeLevels.getChildren().add(emptyLabel);
+            treeCanvas.getChildren().clear();
+            treeCanvas.getChildren().add(emptyLabel);
             return;
         }
 
         minLabel.setText("min = " + model.minValue());
 
-        // ── Build tree-level visualization ──────────
-        buildTreeLevels(model);
+        // ── Render tree using TreeCanvas ────────────
+        treeCanvas.renderHeapTree(model.elements(), true);
 
         // ── Build array strip ───────────────────────
         buildArrayStrip(model);
-    }
-
-    /**
-     * Renders the heap as level-by-level rows, centered.
-     * Level 0: root (1 node)
-     * Level 1: 2 nodes
-     * Level k: up to 2^k nodes
-     */
-    private void buildTreeLevels(HeapStateModel model) {
-        int levels = model.levels();
-        for (int level = 0; level < levels; level++) {
-            HBox row = new HBox(6);
-            row.setAlignment(Pos.CENTER);
-
-            // Level label
-            Label levelLabel = new Label("L" + level);
-            levelLabel.getStyleClass().add("heap-level-label");
-            levelLabel.setMinWidth(24);
-            levelLabel.setAlignment(Pos.CENTER_RIGHT);
-
-            HBox cells = new HBox(4);
-            cells.setAlignment(Pos.CENTER);
-
-            int start = HeapStateModel.levelStart(level);
-            int cap = HeapStateModel.levelCapacity(level);
-            for (int j = 0; j < cap && (start + j) < model.size(); j++) {
-                int idx = start + j;
-                String value = model.elements().get(idx);
-
-                StackPane cell = new StackPane();
-                cell.getStyleClass().add("heap-tree-cell");
-                if (idx == 0) {
-                    cell.getStyleClass().add("heap-tree-cell-root");
-                }
-                cell.setMinWidth(38);
-                cell.setMinHeight(30);
-
-                Label valLabel = new Label(value);
-                valLabel.getStyleClass().add("heap-tree-cell-value");
-                cell.getChildren().add(valLabel);
-
-                cells.getChildren().add(cell);
-            }
-
-            row.getChildren().addAll(levelLabel, cells);
-            treeLevels.getChildren().add(row);
-        }
     }
 
     /**
