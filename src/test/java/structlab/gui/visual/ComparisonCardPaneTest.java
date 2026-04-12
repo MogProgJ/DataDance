@@ -43,7 +43,8 @@ class ComparisonCardPaneTest {
         String snap = "LinkedStack{size=1, top=42, chain=[42]}";
         String rendered = "rendered";
         assertDoesNotThrow(() -> card.updateResult(
-                "LinkedStack", true, "42", snap, rendered, 3, "step1\nstep2\nstep3\n", 1));
+                "LinkedStack", true, "42", snap, rendered, 3, "step1\nstep2\nstep3\n", 1,
+                "12.3 μs", true, false));
     }
 
     @Test
@@ -52,7 +53,8 @@ class ComparisonCardPaneTest {
         String snap = "LinkedQueue{size=0, front=null, rear=null, chain=[]}";
         String rendered = "rendered";
         assertDoesNotThrow(() -> card.updateResult(
-                "LinkedQueue", false, null, snap, rendered, 0, "Error: queue empty", 1));
+                "LinkedQueue", false, null, snap, rendered, 0, "Error: queue empty", 1,
+                "5.0 μs", false, false));
     }
 
     @Test
@@ -60,6 +62,7 @@ class ComparisonCardPaneTest {
         // Null snapshot should fall back gracefully
         ComparisonCardPane card = new ComparisonCardPane();
         assertDoesNotThrow(() -> card.updateResult(
-                "Some Impl", true, "10", null, "raw text", 1, "trace", 1));
+                "Some Impl", true, "10", null, "raw text", 1, "trace", 1,
+                null, false, true));
     }
 }

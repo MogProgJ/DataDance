@@ -19,6 +19,7 @@ public class ComparisonCardPane extends VBox {
     private final Label statusBadge;
     private final Label returnedLabel;
     private final Label opsLabel;
+    private final Label timingLabel;
     private final VisualStateHost visualHost;
     private final VBox traceSection;
     private final TextArea traceArea;
@@ -54,7 +55,10 @@ public class ComparisonCardPane extends VBox {
         opsLabel = new Label("");
         opsLabel.getStyleClass().add("comparison-card-ops");
 
-        metrics.getChildren().addAll(returnedLabel, opsLabel);
+        timingLabel = new Label("");
+        timingLabel.getStyleClass().add("comparison-card-timing");
+
+        metrics.getChildren().addAll(returnedLabel, opsLabel, timingLabel);
 
         // ── State host (visual-first, text fallback) ─
         visualHost = new VisualStateHost("");
@@ -92,6 +96,8 @@ public class ComparisonCardPane extends VBox {
         setStatusBadge("IDLE", "comparison-status-idle");
         returnedLabel.setText("");
         opsLabel.setText("");
+        timingLabel.setText("");
+        getStyleClass().removeAll("comparison-card-divergent", "comparison-card-fastest");
         visualHost.clear();
         traceArea.setText("");
         collapseTrace();
@@ -111,11 +117,20 @@ public class ComparisonCardPane extends VBox {
 
     /**
      * Update the card with a full operation result.
+     *
+     * @param timingText  human-readable duration (e.g. "12.3 μs"), or null to hide
+     * @param fastest     true if this entry was the fastest in the comparison
+     * @param divergent   true if divergence was detected across implementations
      */
     public void updateResult(String implName, boolean success, String returnedValue,
                              String rawSnapshot, String renderedState,
-                             int traceStepCount, String traceText, int totalOps) {
+                             int traceStepCount, String traceText, int totalOps,
+                             String timingText, boolean fastest, boolean divergent) {
         nameLabel.setText(implName);
+
+        getStyleClass().removeAll("comparison-card-divergent", "comparison-card-fastest");
+        if (divergent) getStyleClass().add("comparison-card-divergent");
+        if (fastest) getStyleClass().add("comparison-card-fastest");
 
         if (success) {
             setStatusBadge("OK", "comparison-status-ok");
@@ -129,6 +144,13 @@ public class ComparisonCardPane extends VBox {
             returnedLabel.setText("");
         }
         opsLabel.setText(traceStepCount + " step" + (traceStepCount == 1 ? "" : "s"));
+
+        if (timingText != null) {
+            timingLabel.setText("⏱ " + timingText);
+        } else {
+            timingLabel.setText("");
+        }
+
         visualHost.render(rawSnapshot, renderedState, 200);
         traceArea.setText(traceText);
     }

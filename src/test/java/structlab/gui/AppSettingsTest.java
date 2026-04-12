@@ -1,10 +1,20 @@
 package structlab.gui;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.prefs.Preferences;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class AppSettingsTest {
+
+    @BeforeEach
+    void clearPreferences() throws Exception {
+        Preferences prefs = Preferences.userNodeForPackage(AppSettings.class);
+        prefs.clear();
+        prefs.flush();
+    }
 
     @Test
     void defaultValues() {

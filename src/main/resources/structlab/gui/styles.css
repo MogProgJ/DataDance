@@ -295,6 +295,35 @@
     -fx-font-style: italic;
 }
 
+.learn-card-behavior {
+    -fx-text-fill: #a78bfa;
+    -fx-font-size: 12px;
+    -fx-padding: 2 0;
+}
+
+.learn-card-notes {
+    -fx-text-fill: #8b949e;
+    -fx-font-size: 12px;
+    -fx-font-style: italic;
+    -fx-padding: 2 0;
+}
+
+.learn-search-field {
+    -fx-pref-height: 32;
+    -fx-font-size: 13px;
+    -fx-background-color: #161b22;
+    -fx-text-fill: #c9d1d9;
+    -fx-border-color: #30363d;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-prompt-text-fill: #484f58;
+}
+
+.learn-category-filter {
+    -fx-pref-height: 32;
+    -fx-font-size: 12px;
+}
+
 
 /* ══ Section Headers ══════════════════════════════════════ */
 .section-header {
@@ -651,6 +680,12 @@
 .activity-time {
     -fx-text-fill: #484f58;
     -fx-font-size: 11px;
+}
+
+.activity-category-badge {
+    -fx-text-fill: #6e7681;
+    -fx-font-size: 10px;
+    -fx-font-style: italic;
 }
 
 
@@ -1031,6 +1066,27 @@
 .comparison-status-fail {
     -fx-background-color: rgba(248, 81, 73, 0.18);
     -fx-text-fill: #f85149;
+}
+
+.comparison-status-divergent {
+    -fx-background-color: rgba(210, 153, 34, 0.18);
+    -fx-text-fill: #d29922;
+}
+
+.comparison-card-divergent {
+    -fx-border-color: #d29922;
+    -fx-border-width: 2;
+}
+
+.comparison-card-fastest {
+    -fx-border-color: #3fb950;
+    -fx-border-width: 2;
+}
+
+.comparison-card-timing {
+    -fx-text-fill: #8b949e;
+    -fx-font-size: 11px;
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
 }
 
 /* ── Card Metrics Row ───────────────────────────────────── */
@@ -2946,3 +3002,39 @@
 .graph-badge-scc-4 { -fx-text-fill: #d2a8ff; -fx-font-weight: bold; }
 .graph-badge-scc-5 { -fx-text-fill: #f85149; -fx-font-weight: bold; }
 .graph-badge-scc-6 { -fx-text-fill: #79c0ff; -fx-font-weight: bold; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   Phase 5A — Settings Effects & Export
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Compact mode — reduce padding and font sizes */
+.compact-mode .page-content {
+    -fx-padding: 18 24 18 24;
+}
+.compact-mode .hero-section {
+    -fx-padding: 8 0;
+}
+.compact-mode .learn-card {
+    -fx-padding: 10;
+}
+.compact-mode .comparison-card {
+    -fx-padding: 6;
+}
+
+/* High density — tighter spacing */
+.high-density .page-content {
+    -fx-spacing: 10;
+}
+.high-density .card-grid {
+    -fx-hgap: 8;
+    -fx-vgap: 8;
+}
+.high-density .learn-card {
+    -fx-pref-width: 300;
+    -fx-min-width: 260;
+}
+.high-density .comparison-card-grid {
+    -fx-hgap: 6;
+    -fx-vgap: 6;
+}

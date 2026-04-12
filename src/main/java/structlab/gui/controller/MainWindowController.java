@@ -13,11 +13,13 @@ import javafx.scene.layout.*;
 import javafx.util.Duration;
 
 import structlab.app.comparison.ComparisonEntryResult;
+import structlab.app.comparison.ComparisonAnalysis;
 import structlab.app.comparison.ComparisonOperationResult;
 import structlab.app.comparison.ComparisonRuntimeEntry;
 import structlab.app.comparison.ComparisonSession;
 import structlab.app.service.*;
 import structlab.gui.*;
+import structlab.gui.export.ExportHelper;
 import structlab.gui.visual.ComparisonCardPane;
 import structlab.gui.visual.ComparisonSummaryPane;
 import structlab.gui.visual.VisualStateHost;
@@ -25,6 +27,9 @@ import structlab.trace.TraceStep;
 
 import static structlab.gui.visual.UiComponents.*;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -76,15 +81,21 @@ public class MainWindowController {
     private VBox cmpCardGrid;
     private final List<ComparisonCardPane> cmpCards = new ArrayList<>();
     private Label cmpSessLabel, cmpImplCount, cmpOpsCount;
-    private Button cmpResetBtn, cmpCloseBtn;
+    private Button cmpResetBtn, cmpCloseBtn, cmpExportBtn;
     private ListView<OperationInfo> cmpOpList;
     private TextField cmpArgField;
     private Button cmpRunBtn;
     private ListView<String> cmpHistory;
     private boolean comparisonActive = false;
 
+    // ══ Learn page elements ══════════════════════════════════
+    private VBox learnCardContainer;
+    private TextField learnSearchField;
+    private ComboBox<String> learnCategoryFilter;
+
     // ══ Activity page elements ═══════════════════════════════
     private VBox activityFeed;
+    private ComboBox<String> activityCategoryFilter;
 
     // ══════════════════════════════════════════════════════════
     //  Lifecycle
@@ -93,6 +104,7 @@ public class MainWindowController {
     public void initService(StructLabService service) {
         this.service = service;
         buildAllPages();
+        wireSettingsEffects();
         navigateTo(NavigationPage.EXPLORE);
         activityLog.log("Application started", "StructLab initialized", "system");
     }
@@ -624,7 +636,9 @@ public class MainWindowController {
         cmpResetBtn.setOnAction(e -> handleCompareReset());
         cmpCloseBtn = secondaryButton("Close");
         cmpCloseBtn.setOnAction(e -> handleCompareClose());
-        HBox sessBtns = buttonRow(cmpResetBtn, cmpCloseBtn);
+        cmpExportBtn = secondaryButton("Export");
+        cmpExportBtn.setOnAction(e -> exportCompareHistory());
+        HBox sessBtns = buttonRow(cmpResetBtn, cmpCloseBtn, cmpExportBtn);
         sessCard.getChildren().addAll(
                 styledLabel("COMPARISON", "section-header"),
                 cmpSessLabel, cmpImplCount, cmpOpsCount, sessBtns);
@@ -752,9 +766,20 @@ public class MainWindowController {
             ComparisonOperationResult result =
                     service.executeComparisonOperation(op.name(), args);
             ComparisonSession cs = service.requireComparisonSession();
+            ComparisonAnalysis analysis = ComparisonAnalysis.of(result);
 
-            refreshComparisonCards(result, cs);
-            cmpSummary.updateAfterOperation(cs.historySize(), result.allSucceeded());
+            refreshComparisonCards(result, cs, analysis);
+
+            String verdictText;
+            String verdictStyle;
+            switch (analysis.getVerdict()) {
+                case MATCHING -> { verdictText = "MATCHING"; verdictStyle = "comparison-status-ok"; }
+                case DIVERGENT -> { verdictText = "DIVERGENT"; verdictStyle = "comparison-status-divergent"; }
+                case PARTIAL_FAIL -> { verdictText = "PARTIAL FAIL"; verdictStyle = "comparison-status-fail"; }
+                default -> { verdictText = "UNKNOWN"; verdictStyle = "comparison-status-idle"; }
+            }
+            cmpSummary.updateAfterOperation(cs.historySize(), verdictText, verdictStyle,
+                    analysis.timingSummary());
             cmpOpsCount.setText("Operations: " + cs.historySize());
             cmpArgField.clear();
 
@@ -762,15 +787,22 @@ public class MainWindowController {
             List<String> items = new ArrayList<>();
             for (int i = 0; i < history.size(); i++) {
                 ComparisonOperationResult h = history.get(i);
-                String status = h.allSucceeded() ? "\u2714" : "\u26a0";
+                ComparisonAnalysis ha = ComparisonAnalysis.of(h);
+                String icon = switch (ha.getVerdict()) {
+                    case MATCHING -> "\u2714";
+                    case DIVERGENT -> "\u2194";
+                    case PARTIAL_FAIL -> "\u26a0";
+                };
                 String argsStr = h.args().isEmpty() ? "" : " " + String.join(" ", h.args());
-                items.add(status + "  " + (i + 1) + ". " + h.operationName() + argsStr);
+                items.add(icon + "  " + (i + 1) + ". " + h.operationName() + argsStr);
             }
             cmpHistory.setItems(FXCollections.observableArrayList(items));
 
             String msg;
-            if (result.allSucceeded()) {
-                msg = "Compared: " + op.name() + " — all succeeded";
+            if (analysis.getVerdict() == ComparisonAnalysis.OverallVerdict.MATCHING) {
+                msg = "Compared: " + op.name() + " — all matching";
+            } else if (analysis.getVerdict() == ComparisonAnalysis.OverallVerdict.DIVERGENT) {
+                msg = "Compared: " + op.name() + " — divergence detected";
             } else {
                 long fails = result.entryResults().stream().filter(e -> !e.success()).count();
                 msg = "Compared: " + op.name() + " — " + fails + " failed";
@@ -805,7 +837,8 @@ public class MainWindowController {
         }
     }
 
-    private void refreshComparisonCards(ComparisonOperationResult result, ComparisonSession cs) {
+    private void refreshComparisonCards(ComparisonOperationResult result, ComparisonSession cs,
+                                         ComparisonAnalysis analysis) {
         List<ComparisonEntryResult> entryResults = result.entryResults();
         List<ComparisonRuntimeEntry> entries = cs.getEntries();
         for (int i = 0; i < entryResults.size() && i < cmpCards.size(); i++) {
@@ -832,7 +865,10 @@ public class MainWindowController {
                     renderedState,
                     er.traceSteps().size(),
                     traceText.toString(),
-                    cs.historySize()
+                    cs.historySize(),
+                    er.formattedDuration(),
+                    analysis.isFastest(er),
+                    analysis.hasDivergences()
             );
         }
     }
@@ -841,6 +877,7 @@ public class MainWindowController {
         cmpStartBtn.setDisable(active);
         cmpResetBtn.setDisable(!active);
         cmpCloseBtn.setDisable(!active);
+        cmpExportBtn.setDisable(!active);
         cmpRunBtn.setDisable(!active);
     }
 
@@ -893,32 +930,80 @@ public class MainWindowController {
         heroSub.setWrapText(true);
         VBox hero = new VBox(8, heroTitle, heroSub);
         hero.getStyleClass().add("hero-section");
-        content.getChildren().add(hero);
 
-        // Group by category
+        // Search + Category filter bar
+        learnSearchField = new TextField();
+        learnSearchField.setPromptText("Search structures by name, keyword, or description...");
+        learnSearchField.getStyleClass().add("learn-search-field");
+        learnSearchField.setPrefWidth(320);
+
         List<StructureSummary> all = service.getAllStructures();
-        Map<String, List<StructureSummary>> byCategory = all.stream()
-                .collect(Collectors.groupingBy(
-                        StructureSummary::category,
-                        LinkedHashMap::new,
-                        Collectors.toList()));
+        Set<String> categories = all.stream().map(StructureSummary::category)
+                .collect(Collectors.toCollection(TreeSet::new));
+        learnCategoryFilter = new ComboBox<>(FXCollections.observableArrayList(
+                new ArrayList<>() {{ add("All Categories"); addAll(categories); }}));
+        learnCategoryFilter.setValue("All Categories");
+        learnCategoryFilter.getStyleClass().add("learn-category-filter");
 
-        for (Map.Entry<String, List<StructureSummary>> cat : byCategory.entrySet()) {
-            content.getChildren().add(
-                    styledLabel(cat.getKey().toUpperCase() + " STRUCTURES", "category-header"));
+        HBox filterBar = new HBox(12, learnSearchField, learnCategoryFilter);
+        filterBar.setAlignment(Pos.CENTER_LEFT);
 
-            FlowPane grid = new FlowPane(16, 16);
-            grid.getStyleClass().add("card-grid");
-            for (StructureSummary s : cat.getValue()) {
-                grid.getChildren().add(buildLearnCard(s));
-            }
-            content.getChildren().add(grid);
-        }
+        learnSearchField.textProperty().addListener((obs, o, n) -> refreshLearnCards());
+        learnCategoryFilter.valueProperty().addListener((obs, o, n) -> refreshLearnCards());
+
+        // Card container
+        learnCardContainer = new VBox(28);
+        refreshLearnCards();
+
+        content.getChildren().addAll(hero, filterBar, learnCardContainer);
 
         ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
         scroll.getStyleClass().add("page-scroll");
         return scroll;
+    }
+
+    private void refreshLearnCards() {
+        learnCardContainer.getChildren().clear();
+        List<StructureSummary> all = service.getAllStructures();
+        String query = learnSearchField.getText() != null ? learnSearchField.getText().trim().toLowerCase(Locale.ROOT) : "";
+        String catFilter = learnCategoryFilter.getValue();
+
+        // Filter
+        List<StructureSummary> filtered = all.stream().filter(s -> {
+            if (!"All Categories".equals(catFilter) && !s.category().equals(catFilter)) return false;
+            if (query.isEmpty()) return true;
+            if (s.name().toLowerCase(Locale.ROOT).contains(query)) return true;
+            if (s.description() != null && s.description().toLowerCase(Locale.ROOT).contains(query)) return true;
+            if (s.keywords() != null && s.keywords().stream().anyMatch(k -> k.toLowerCase(Locale.ROOT).contains(query))) return true;
+            if (s.behavior() != null && s.behavior().toLowerCase(Locale.ROOT).contains(query)) return true;
+            return false;
+        }).toList();
+
+        // Group by category
+        Map<String, List<StructureSummary>> byCategory = filtered.stream()
+                .collect(Collectors.groupingBy(
+                        StructureSummary::category,
+                        LinkedHashMap::new,
+                        Collectors.toList()));
+
+        if (filtered.isEmpty()) {
+            Label empty = styledLabel("No structures match your search.", "detail-description");
+            empty.setPadding(new Insets(24));
+            learnCardContainer.getChildren().add(empty);
+            return;
+        }
+
+        for (Map.Entry<String, List<StructureSummary>> cat : byCategory.entrySet()) {
+            learnCardContainer.getChildren().add(
+                    styledLabel(cat.getKey().toUpperCase() + " STRUCTURES", "category-header"));
+            FlowPane grid = new FlowPane(16, 16);
+            grid.getStyleClass().add("card-grid");
+            for (StructureSummary s : cat.getValue()) {
+                grid.getChildren().add(buildLearnCard(s));
+            }
+            learnCardContainer.getChildren().add(grid);
+        }
     }
 
     private VBox buildLearnCard(StructureSummary s) {
@@ -932,6 +1017,25 @@ public class MainWindowController {
         Label desc = styledLabel(s.description() != null ? s.description() : "", "learn-card-desc");
         desc.setWrapText(true);
 
+        card.getChildren().addAll(name, desc);
+
+        // Behavior section
+        if (s.behavior() != null && !s.behavior().isBlank()) {
+            Label behaviorHeader = styledLabel("BEHAVIOR", "learn-card-section");
+            Label behaviorText = styledLabel(s.behavior(), "learn-card-behavior");
+            behaviorText.setWrapText(true);
+            card.getChildren().addAll(new Separator(), behaviorHeader, behaviorText);
+        }
+
+        // Learning notes section
+        if (s.learningNotes() != null && !s.learningNotes().isBlank()) {
+            Label notesHeader = styledLabel("LEARNING NOTES", "learn-card-section");
+            Label notesText = styledLabel(s.learningNotes(), "learn-card-notes");
+            notesText.setWrapText(true);
+            card.getChildren().addAll(new Separator(), notesHeader, notesText);
+        }
+
+        // Implementations
         VBox implBox = new VBox(6);
         List<ImplementationSummary> impls = service.getImplementations(s.id());
         for (ImplementationSummary impl : impls) {
@@ -957,7 +1061,7 @@ public class MainWindowController {
                 ? String.join("  \u00b7  ", s.keywords()) : "";
 
         card.getChildren().addAll(
-                name, desc, new Separator(),
+                new Separator(),
                 styledLabel("IMPLEMENTATIONS", "learn-card-section"), implBox);
         if (!kwText.isEmpty()) {
             card.getChildren().addAll(new Separator(), styledLabel(kwText, "learn-card-keywords"));
@@ -981,10 +1085,32 @@ public class MainWindowController {
         VBox hero = new VBox(8, heroTitle, heroSub);
         hero.getStyleClass().add("hero-section");
 
+        // Filter + action bar
+        activityCategoryFilter = new ComboBox<>(FXCollections.observableArrayList("All"));
+        activityCategoryFilter.setValue("All");
+        activityCategoryFilter.getStyleClass().add("learn-category-filter");
+        activityCategoryFilter.valueProperty().addListener((obs, o, n) -> refreshActivityPage());
+
+        Button clearBtn = new Button("Clear");
+        clearBtn.getStyleClass().add("action-btn");
+        clearBtn.setOnAction(e -> {
+            activityLog.clear();
+            refreshActivityPage();
+            setStatus("Activity log cleared.");
+        });
+
+        Button exportBtn = new Button("Export");
+        exportBtn.getStyleClass().add("action-btn");
+        exportBtn.setOnAction(e -> exportActivityLog());
+
+        HBox toolbar = new HBox(12, activityCategoryFilter, new Region(), clearBtn, exportBtn);
+        toolbar.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(toolbar.getChildren().get(1), Priority.ALWAYS);
+
         activityFeed = new VBox(0);
         activityFeed.getStyleClass().add("activity-feed");
 
-        content.getChildren().addAll(hero, activityFeed);
+        content.getChildren().addAll(hero, toolbar, activityFeed);
 
         ScrollPane scroll = new ScrollPane(content);
         scroll.setFitToWidth(true);
@@ -996,7 +1122,19 @@ public class MainWindowController {
         if (activityFeed == null) return;
         activityFeed.getChildren().clear();
 
-        List<ActivityLog.Entry> recent = activityLog.getRecent(50);
+        // Update category filter options
+        Set<String> cats = activityLog.getCategories();
+        List<String> catOptions = new ArrayList<>();
+        catOptions.add("All");
+        catOptions.addAll(cats);
+        String selected = activityCategoryFilter.getValue();
+        activityCategoryFilter.setItems(FXCollections.observableArrayList(catOptions));
+        activityCategoryFilter.setValue(catOptions.contains(selected) ? selected : "All");
+
+        String filter = activityCategoryFilter.getValue();
+        List<ActivityLog.Entry> recent = "All".equals(filter)
+                ? activityLog.getRecent(50) : activityLog.getByCategory(filter);
+
         if (recent.isEmpty()) {
             Label empty = styledLabel(
                     "No activity yet. Open a session or start a comparison to see your history here.",
@@ -1028,7 +1166,10 @@ public class MainWindowController {
             VBox textBox = new VBox(2);
             HBox.setHgrow(textBox, Priority.ALWAYS);
             Label action = styledLabel(entry.action(), "activity-action");
-            textBox.getChildren().add(action);
+            Label catLabel = styledLabel("[" + entry.category() + "]", "activity-category-badge");
+            HBox actionRow = new HBox(8, action, catLabel);
+            actionRow.setAlignment(Pos.CENTER_LEFT);
+            textBox.getChildren().add(actionRow);
             if (!entry.detail().isEmpty()) {
                 Label detail = styledLabel(entry.detail(), "activity-detail");
                 detail.setWrapText(true);
@@ -1038,6 +1179,91 @@ public class MainWindowController {
             Label time = styledLabel(entry.timestamp().format(fmt), "activity-time");
             row.getChildren().addAll(iconLabel, textBox, time);
             activityFeed.getChildren().add(row);
+        }
+    }
+
+    // ── Export helpers ────────────────────────────────────────
+
+    private void exportCompareHistory() {
+        ComparisonSession cs;
+        try { cs = service.requireComparisonSession(); } catch (Exception e) {
+            setStatus("No active comparison to export.");
+            return;
+        }
+        javafx.stage.FileChooser fc = new javafx.stage.FileChooser();
+        fc.setTitle("Export Comparison History");
+        fc.getExtensionFilters().addAll(
+                new javafx.stage.FileChooser.ExtensionFilter("Markdown", "*.md"),
+                new javafx.stage.FileChooser.ExtensionFilter("JSON", "*.json"),
+                new javafx.stage.FileChooser.ExtensionFilter("Text", "*.txt"));
+        fc.setInitialFileName("compare-history");
+        File file = fc.showSaveDialog(pageHost.getScene().getWindow());
+        if (file == null) return;
+        try {
+            String name = file.getName().toLowerCase(Locale.ROOT);
+            String content = name.endsWith(".json")
+                    ? ExportHelper.compareHistoryToJson(cs.getStructureName(), cs.getHistory())
+                    : ExportHelper.compareHistoryToText(cs.getStructureName(), cs.getHistory());
+            Files.writeString(file.toPath(), content);
+            setStatus("Exported comparison history to " + file.getName());
+            activityLog.log("Export", "Comparison history → " + file.getName(), "system");
+        } catch (IOException e) {
+            showError("Export failed", e.getMessage());
+        }
+    }
+
+    private void exportActivityLog() {
+        javafx.stage.FileChooser fc = new javafx.stage.FileChooser();
+        fc.setTitle("Export Activity Log");
+        fc.getExtensionFilters().addAll(
+                new javafx.stage.FileChooser.ExtensionFilter("Markdown", "*.md"),
+                new javafx.stage.FileChooser.ExtensionFilter("JSON", "*.json"),
+                new javafx.stage.FileChooser.ExtensionFilter("Text", "*.txt"));
+        fc.setInitialFileName("activity-log");
+        File file = fc.showSaveDialog(pageHost.getScene().getWindow());
+        if (file == null) return;
+        try {
+            String filter = activityCategoryFilter != null ? activityCategoryFilter.getValue() : "All";
+            List<ActivityLog.Entry> entries = "All".equals(filter)
+                    ? activityLog.getAll() : activityLog.getByCategory(filter);
+            String name = file.getName().toLowerCase(Locale.ROOT);
+            String content = name.endsWith(".json")
+                    ? ExportHelper.activityToJson(entries)
+                    : ExportHelper.activityToText(entries);
+            Files.writeString(file.toPath(), content);
+            setStatus("Exported activity log to " + file.getName());
+            activityLog.log("Export", "Activity log → " + file.getName(), "system");
+        } catch (IOException e) {
+            showError("Export failed", e.getMessage());
+        }
+    }
+
+    private void wireSettingsEffects() {
+        // Apply compact/high-density style classes to the root
+        applyRootStyleClass("compact-mode", settings.isCompactMode());
+        applyRootStyleClass("high-density", settings.isHighDensity());
+        settings.compactModeProperty().addListener((obs, o, n) -> applyRootStyleClass("compact-mode", n));
+        settings.highDensityProperty().addListener((obs, o, n) -> applyRootStyleClass("high-density", n));
+    }
+
+    private void applyRootStyleClass(String styleClass, boolean add) {
+        if (pageHost.getScene() != null && pageHost.getScene().getRoot() != null) {
+            if (add) {
+                pageHost.getScene().getRoot().getStyleClass().add(styleClass);
+            } else {
+                pageHost.getScene().getRoot().getStyleClass().remove(styleClass);
+            }
+        } else {
+            // Scene may not be set yet; defer
+            pageHost.sceneProperty().addListener((obs, o, n) -> {
+                if (n != null && n.getRoot() != null) {
+                    if (add) {
+                        n.getRoot().getStyleClass().add(styleClass);
+                    } else {
+                        n.getRoot().getStyleClass().remove(styleClass);
+                    }
+                }
+            });
         }
     }
 

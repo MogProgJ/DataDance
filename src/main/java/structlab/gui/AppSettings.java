@@ -3,12 +3,28 @@ package structlab.gui;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 
+import java.util.prefs.Preferences;
+
 public class AppSettings {
 
-    private final BooleanProperty motionEnabled = new SimpleBooleanProperty(true);
-    private final BooleanProperty compactMode = new SimpleBooleanProperty(false);
-    private final BooleanProperty showRawTraces = new SimpleBooleanProperty(true);
-    private final BooleanProperty highDensity = new SimpleBooleanProperty(false);
+    private static final String PREF_MOTION = "motionEnabled";
+    private static final String PREF_COMPACT = "compactMode";
+    private static final String PREF_RAW_TRACES = "showRawTraces";
+    private static final String PREF_HIGH_DENSITY = "highDensity";
+
+    private final Preferences prefs = Preferences.userNodeForPackage(AppSettings.class);
+
+    private final BooleanProperty motionEnabled = new SimpleBooleanProperty(prefs.getBoolean(PREF_MOTION, true));
+    private final BooleanProperty compactMode = new SimpleBooleanProperty(prefs.getBoolean(PREF_COMPACT, false));
+    private final BooleanProperty showRawTraces = new SimpleBooleanProperty(prefs.getBoolean(PREF_RAW_TRACES, true));
+    private final BooleanProperty highDensity = new SimpleBooleanProperty(prefs.getBoolean(PREF_HIGH_DENSITY, false));
+
+    public AppSettings() {
+        motionEnabled.addListener((obs, o, n) -> prefs.putBoolean(PREF_MOTION, n));
+        compactMode.addListener((obs, o, n) -> prefs.putBoolean(PREF_COMPACT, n));
+        showRawTraces.addListener((obs, o, n) -> prefs.putBoolean(PREF_RAW_TRACES, n));
+        highDensity.addListener((obs, o, n) -> prefs.putBoolean(PREF_HIGH_DENSITY, n));
+    }
 
     public BooleanProperty motionEnabledProperty() { return motionEnabled; }
     public boolean isMotionEnabled() { return motionEnabled.get(); }

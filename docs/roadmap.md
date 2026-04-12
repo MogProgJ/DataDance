@@ -90,16 +90,36 @@ JavaFxToolkitExtension with bounded startup timeout.
 - ComparisonCardPane refactored: 3 fields replaced by single VisualStateHost,
   2 private methods eliminated
 
+### Phase 5A — Product Surface Upgrade
+- **Compare Intelligence**: Per-implementation execution timing (nanosecond
+  precision), ComparisonAnalysis model with divergence detection
+  (STATUS_MISMATCH, VALUE_MISMATCH, STATE_DIVERGENCE), fastest/slowest
+  annotation, and three-state verdict (MATCHING / DIVERGENT / PARTIAL_FAIL)
+- **Learn Page**: Search and category filtering, richer cards showing
+  behavior descriptions and learning notes from registry metadata
+- **Settings Persistence**: AppSettings backed by java.util.prefs.Preferences —
+  compact mode and high-density layout applied as live root style classes
+- **Activity Enrichment**: Category-based filtering, clear log, export button
+- **Export Flows**: ExportHelper for Compare history and Activity feed in
+  both JSON and plain-text/markdown formats via FileChooser dialogs
+- CSS additions: divergent/fastest card borders, timing labels, learn
+  search bar, activity category badges, compact-mode and high-density
+  root-level style effects
+
 ---
 
 ## Current state
 
 - 7 structure families, 17 implementations
 - 14 visual panes covering all families + GraphVisualPane
-- Full Explore and Compare modes with visual rendering
+- Full Explore and Compare modes with visual rendering and compare intelligence
 - Algorithm Lab with 11 graph algorithms, compare mode, and scenario save/load
 - Six-page GUI shell (Explore, Compare, Learn, Activity, Settings, Algorithm Lab)
-- 930+ tests, 0 failures
+- Learn page with search/filter, behavior descriptions, and learning notes
+- Settings persisted via Preferences with live compact/high-density effects
+- Activity page with category filter, clear, and export
+- Compare and Activity export (JSON + text) via FileChooser
+- 980+ tests, 0 failures
 - Clean CI with Xvfb and coverage reporting
 - Structured visual state architecture (VisualState sealed hierarchy)
 - Reusable visual primitives (UiComponents, VisualStateHost)
@@ -115,30 +135,15 @@ hierarchy and VisualPaneCache already provide the hooks:
 - Animate element additions, removals, swaps
 - Configurable speed / step-through mode
 
-### Phase 3C — Enhanced Compare Intelligence
-- Diff highlighting between comparison cards
-- Performance timing per implementation
-- Divergence detection and annotation
-- Export comparison results
-
-### Phase 3C — Learn Page Content
-Populate the Learn page with structured reference content generated
-from the registry, including complexity tables, invariant descriptions,
-and implementation comparison summaries.
-
-### Phase 4 — Algorithm Lab Expansion
-Extend the Algorithm Lab beyond BFS/DFS:
-- Dijkstra (weighted shortest path)
-- Bellman-Ford, Topological Sort
-- Prim, Kruskal (MST)
-- A*, Floyd-Warshall
-
-See [future-algorithm-lab.md](future-algorithm-lab.md) and
-[algorithm-simulation-spec.md](algorithm-simulation-spec.md).
+### Phase 3A — Animation and Transition System
+Add animated transitions between visual states.  The VisualState sealed
+hierarchy and VisualPaneCache already provide the hooks:
+- Diff old vs new VisualState
+- Animate element additions, removals, swaps
+- Configurable speed / step-through mode
 
 ### Ongoing
 - Additional structure families (BST, AVL, Trie, Graph)
 - Performance experiment mode
-- Trace export (JSON/text)
-- Activity page enrichment
-- Settings page implementation
+- Animated visual transitions
+- Complexity-table expansion in Learn cards

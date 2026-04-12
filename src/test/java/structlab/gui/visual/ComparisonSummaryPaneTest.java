@@ -31,13 +31,13 @@ class ComparisonSummaryPaneTest {
     void updateAfterOperationWithSuccess() {
         ComparisonSummaryPane pane = new ComparisonSummaryPane();
         pane.updateSession("Stack", 2);
-        assertDoesNotThrow(() -> pane.updateAfterOperation(5, true));
+        assertDoesNotThrow(() -> pane.updateAfterOperation(5, "MATCHING", "comparison-status-ok", "12.0 μs"));
     }
 
     @Test
     void updateAfterOperationWithFailure() {
         ComparisonSummaryPane pane = new ComparisonSummaryPane();
         pane.updateSession("Queue", 2);
-        assertDoesNotThrow(() -> pane.updateAfterOperation(3, false));
+        assertDoesNotThrow(() -> pane.updateAfterOperation(3, "PARTIAL FAIL", "comparison-status-fail", "5.0 μs – 20.0 μs"));
     }
 }

@@ -33,7 +33,7 @@ In-flight CI for the same branch is cancelled when a new push arrives.
 
 ### Current state
 
-- **930+ tests**, 0 failures (as of Phase 4C)
+- **980+ tests**, 0 failures (as of Phase 5A)
 - **88 test files** under `src/test/java/`
 
 ### Test layers
@@ -51,8 +51,11 @@ In-flight CI for the same branch is cancelled when a new push arrives.
 | Visual state | State model parsing | `StateModelParserTest`, `StateModelParserHashTest` |
 | Visual panes | JavaFX pane rendering | `StackVisualPaneTest`, `HeapVisualPaneTest`, etc. |
 | Factory | Visual factory dispatch | `VisualStateFactoryTest` |
-| Comparison | Comparison card/summary panes | `ComparisonCardPaneTest`, `ComparisonSummaryPaneTest` |
+| Comparison | Comparison card/summary panes, analysis | `ComparisonCardPaneTest`, `ComparisonAnalysisTest` |
 | Operations | Canonical operation registry | `CanonicalOperationRegistryTest` |
+| Export | Compare + Activity export helpers | `ExportHelperTest` |
+| Settings | Preferences persistence | `AppSettingsPersistenceTest`, `AppSettingsTest` |
+| Activity | Activity log filtering/clear | `ActivityLogEnhancedTest` |
 
 ### JavaFX test handling
 

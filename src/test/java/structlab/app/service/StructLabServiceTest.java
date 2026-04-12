@@ -60,6 +60,21 @@ class StructLabServiceTest {
         }
 
         @Test
+        void structureSummaryIncludesBehaviorAndLearningNotes() {
+            StructureSummary s = service.getStructure("struct-stack").orElseThrow();
+            assertNotNull(s.behavior());
+            assertNotNull(s.learningNotes());
+        }
+
+        @Test
+        void allStructuresHaveBehaviorAndLearningNotes() {
+            for (StructureSummary s : service.getAllStructures()) {
+                assertNotNull(s.behavior(), "behavior null for " + s.id());
+                assertNotNull(s.learningNotes(), "learningNotes null for " + s.id());
+            }
+        }
+
+        @Test
         void getImplementationsReturnsPopulatedList() {
             List<ImplementationSummary> impls = service.getImplementations("struct-stack");
             assertFalse(impls.isEmpty());

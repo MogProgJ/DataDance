@@ -47,14 +47,16 @@ public class StructLabService {
 
     public List<StructureSummary> getAllStructures() {
         return registry.getAllStructures().stream()
-                .map(m -> new StructureSummary(m.id(), m.name(), m.category(), m.keywords(), m.description()))
+                .map(m -> new StructureSummary(m.id(), m.name(), m.category(), m.keywords(), m.description(),
+                        m.behavior(), m.learningNotes()))
                 .toList();
     }
 
     public Optional<StructureSummary> getStructure(String structureId) {
         String id = normalizeStructureId(structureId);
         return registry.getStructureById(id)
-                .map(m -> new StructureSummary(m.id(), m.name(), m.category(), m.keywords(), m.description()));
+                .map(m -> new StructureSummary(m.id(), m.name(), m.category(), m.keywords(), m.description(),
+                        m.behavior(), m.learningNotes()));
     }
 
     public List<ImplementationSummary> getImplementations(String structureId) {
@@ -181,7 +183,8 @@ public class StructLabService {
     public List<StructureSummary> getComparableStructures() {
         return registry.getAllStructures().stream()
                 .filter(m -> registry.getImplementationsFor(m.id()).size() >= 2)
-                .map(m -> new StructureSummary(m.id(), m.name(), m.category(), m.keywords(), m.description()))
+                .map(m -> new StructureSummary(m.id(), m.name(), m.category(), m.keywords(), m.description(),
+                        m.behavior(), m.learningNotes()))
                 .toList();
     }
 

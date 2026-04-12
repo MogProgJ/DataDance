@@ -77,19 +77,37 @@ for visual-or-text-fallback rendering.
 
 ### Learn
 
-Data structure reference library.  Displays registry metadata:
-categories, descriptions, keywords, complexity information,
-implementation variants.
+Data structure reference library with search and filtering.
+
+- **Search bar**: Real-time text filter across structure names,
+  categories, keywords, descriptions, behavior, and learning notes
+- **Category filter**: ComboBox to narrow by structure category
+- **Cards**: Each card shows name, category, keywords, description,
+  behavior description, and learning notes sourced from the registry
+- Grouped by category when unfiltered
 
 ### Activity
 
-Session history and recent actions log.  Shows a timeline of
-operations performed during the current application run.
+Session history and recent actions log.
+
+- **Category filter**: ComboBox to view only entries of a specific
+  category (e.g. "SESSION", "OPERATION", "COMPARE")
+- **Clear button**: Empties the activity log
+- **Export button**: Saves filtered activity to JSON or text via
+  FileChooser
+- Shows a timeline of operations performed during the current
+  application run, each with a category badge
 
 ### Settings
 
-Application preferences (placeholder for future configuration
-such as theme, animation speed, default family).
+Application preferences persisted via `java.util.prefs.Preferences`.
+
+- **Compact mode**: Toggle that applies the `compact-mode` root style
+  class (reduced padding and margins)
+- **High-density layout**: Toggle that applies the `high-density` root
+  style class (tighter spacing, smaller font sizes)
+- **Show raw traces** / **Motion enabled**: Additional preference toggles
+- All settings take effect immediately and persist across restarts
 
 ### Algorithm Lab
 

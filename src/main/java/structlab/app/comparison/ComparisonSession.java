@@ -110,7 +110,9 @@ public class ComparisonSession implements StructureSession {
         for (ComparisonRuntimeEntry entry : entries) {
             StructureRuntime runtime = entry.getRuntime();
             try {
+                long startNanos = System.nanoTime();
                 OperationExecutionResult execResult = runtime.execute(operation, args);
+                long durationNanos = System.nanoTime() - startNanos;
                 String stateAfter = runtime.renderCurrentState();
                 List<TraceStep> steps = execResult.traceSteps() != null
                         ? List.copyOf(execResult.traceSteps()) : List.of();
@@ -123,9 +125,11 @@ public class ComparisonSession implements StructureSession {
                         execResult.message(),
                         execResult.returnedValue(),
                         stateAfter,
-                        steps
+                        steps,
+                        durationNanos
                 ));
             } catch (Exception e) {
+                long durationNanos = 0;
                 results.add(new ComparisonEntryResult(
                         entry.getImplementationId(),
                         entry.getImplementationName(),
@@ -134,7 +138,8 @@ public class ComparisonSession implements StructureSession {
                         e.getMessage(),
                         null,
                         runtime.renderCurrentState(),
-                        List.of()
+                        List.of(),
+                        durationNanos
                 ));
             }
         }

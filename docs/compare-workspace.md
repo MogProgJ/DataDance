@@ -100,9 +100,27 @@ produced different internal states for the same operation.
 
 ---
 
+## ComparisonAnalysis and intelligence (Phase 5A)
+
+`ComparisonAnalysis` wraps a `ComparisonOperationResult` and provides:
+
+- **Divergence detection** — three types: `STATUS_MISMATCH` (one passed,
+  one failed), `VALUE_MISMATCH` (different returned values),
+  `STATE_DIVERGENCE` (different state-after snapshots)
+- **Overall verdict** — `MATCHING`, `DIVERGENT`, or `PARTIAL_FAIL`
+- **Timing analysis** — each entry carries `durationNanos`; analysis
+  identifies fastest/slowest and produces a human summary
+- **UI effects** — divergent cards get amber borders, fastest cards
+  get green borders, timing labels shown on each card, history items
+  use verdict icons (✔/↔/⚠)
+
+### Export
+
+Compare history can be exported via `ExportHelper.compareHistoryToText()`
+or `compareHistoryToJson()` through a FileChooser dialog.
+
+---
+
 ## Future enhancements
 
-- Diff highlighting between cards (e.g. highlight divergent fields)
-- Performance timing per card
 - Animated step-through mode
-- Export comparison results
