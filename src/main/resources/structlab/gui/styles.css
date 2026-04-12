@@ -2817,7 +2817,7 @@
     -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
 }
 
-.graph-builder-list .list-cell:selected {
+.graph-builder-list .graph-builder-list-selected {
     -fx-background-color: #282e36;
 }
 

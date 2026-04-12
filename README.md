@@ -53,12 +53,13 @@ a swamp.
 
 ## Project status
 
-> **Phase 7 — Comparison Mode (active)**
+> **Phase 4C — Graph Workbench Hardening (active)**
 >
-> Phases 1–6 are complete.  A terminal simulator backend and a JavaFX GUI
-> are both functional.  Phase 7 adds **comparison mode**: run the same
-> operation sequence against multiple implementations of the same ADT and
-> compare results, state, and traces side-by-side.
+> Phases 1–6 and the comparison-mode / algorithm-lab expansions are
+> complete.  A terminal simulator backend and a JavaFX GUI are both
+> functional.  Phase 4C hardens the Algorithm Lab with typed algorithm
+> metadata, context-aware controls, compare-mode productization, and
+> doc/test alignment.
 >
 > **What works:**
 > - Terminal simulator: full discovery, session, operation, and comparison flow
@@ -70,10 +71,13 @@ a swamp.
 >   view side-by-side state/trace/history, reset all, close
 > - Supported comparison families: Stack (2), Queue (3), Deque (2),
 >   Heap (2), Array (2), Linked List (2), Hash Table (5)
+> - Algorithm Lab: 11 graph algorithms (BFS, DFS, Dijkstra, Bellman-Ford,
+>   Topo Sort, A*, Prim, Kruskal, SCC, Bridges, Articulation Points)
+>   with typed metadata catalog, compare mode, and scenario save/load
 > - Service facade: clean API consumed by the GUI and terminal, tested
 >   independently
-> - Backend tests: 400+ automated tests covering core, trace, render,
->   service, and comparison layers
+> - Backend tests: 930+ automated tests covering core, trace, render,
+>   service, comparison, and graph algorithm layers
 >
 > **Current limitations:**
 > - GUI comparison view uses text-based rendering (not rich graphics)
@@ -103,6 +107,7 @@ a swamp.
 | Hash | Hash table OA (linear) | `HashTableOpenAddressing` | yes | yes | yes |
 | Hash | Hash table OA (quadratic) | `HashTableOpenAddressing` | yes | yes | yes |
 | Hash | Hash table OA (double) | `HashTableOpenAddressing` | yes | yes | yes |
+| Graph | Directed/undirected graph | `Graph` | yes | yes | yes |
 
 ---
 
@@ -226,11 +231,6 @@ layer boundaries.
 | 8 | Comparison mode (same ops on multiple implementations) |
 | 9 | Algorithm demonstrations on top of structures |
 | 10 | Polish, testing, and educational refinement |
-| 6 | JavaFX GUI shell and service layer |
-| 7 | Broader data structure family |
-| 8 | Comparison mode (same ops on multiple implementations) |
-| 9 | Algorithm demonstrations on top of structures |
-| 10 | Polish, testing, and educational refinement |
 
 Full details are in [`docs/roadmap.md`](docs/roadmap.md).
 
@@ -251,7 +251,7 @@ installation needed.
 ```
 
 The JavaFX application window will open.  See
-[`docs/gui-playthrough-manual.md`](docs/gui-playthrough-manual.md) for a
+[`docs/how-to-play.md`](docs/how-to-play.md) for a
 step-by-step walkthrough.
 
 ### Terminal mode (secondary)

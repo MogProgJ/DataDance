@@ -71,6 +71,17 @@ public class PlaybackController {
         }
     }
 
+    /**
+     * Jumps directly to the given frame index (clamped to valid range).
+     * Returns true if the index was within range, false if clamped.
+     */
+    public boolean jumpTo(int index) {
+        if (frames.isEmpty()) return false;
+        int clamped = Math.max(0, Math.min(index, frames.size() - 1));
+        currentIndex = clamped;
+        return clamped == index;
+    }
+
     /** Returns the current frame index (0-based), or -1 if empty. */
     public int currentIndex() {
         return currentIndex;

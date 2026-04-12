@@ -97,7 +97,9 @@ Interactive graph algorithm simulation workspace.
 
 - **Graph panel**: Force-directed Canvas rendering of nodes and edges
   with colour-coded visited/frontier/unvisited states.
-- **Algorithm selector**: BFS and DFS (first wave); Dijkstra planned.
+- **Algorithm selector**: 11 algorithms — BFS, DFS, Dijkstra, Bellman-Ford,
+  Topo Sort, A*, Prim (MST), Kruskal (MST), SCC (Kosaraju), Bridges,
+  Articulation Points — driven by a typed metadata catalog.
 - **Playback controls**: Step forward, step back, play/pause, speed
   slider, reset.
 - **Graph presets**: Built-in sample graphs (small, medium, tree, etc.).

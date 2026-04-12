@@ -118,4 +118,50 @@ class PlaybackControllerTest {
         assertNull(pc.current());
         assertEquals(-1, pc.currentIndex());
     }
+
+    @Test
+    void jumpToInRange() {
+        PlaybackController pc = new PlaybackController();
+        Graph g = new Graph(false);
+        g.addEdge("A", "B");
+        g.addEdge("B", "C");
+        var frames = BfsRunner.run(g, "A");
+        pc.load(frames);
+
+        assertTrue(pc.jumpTo(2));
+        assertEquals(2, pc.currentIndex());
+        assertNotNull(pc.current());
+    }
+
+    @Test
+    void jumpToClampedHigh() {
+        PlaybackController pc = new PlaybackController();
+        Graph g = new Graph(false);
+        g.addEdge("A", "B");
+        var frames = BfsRunner.run(g, "A");
+        pc.load(frames);
+
+        assertFalse(pc.jumpTo(9999));
+        assertEquals(frames.size() - 1, pc.currentIndex());
+    }
+
+    @Test
+    void jumpToClampedLow() {
+        PlaybackController pc = new PlaybackController();
+        Graph g = new Graph(false);
+        g.addEdge("A", "B");
+        var frames = BfsRunner.run(g, "A");
+        pc.load(frames);
+        pc.jumpToEnd();
+
+        assertFalse(pc.jumpTo(-5));
+        assertEquals(0, pc.currentIndex());
+    }
+
+    @Test
+    void jumpToOnEmptyReturnsFalse() {
+        PlaybackController pc = new PlaybackController();
+        assertFalse(pc.jumpTo(0));
+        assertEquals(-1, pc.currentIndex());
+    }
 }

@@ -68,12 +68,16 @@ JavaFxToolkitExtension with bounded startup timeout.
 
 ### Phase 3B — Graph Core + Algorithm Lab MVP
 - Graph.java — directed/undirected, weighted/unweighted adjacency-list model
-- AlgorithmFrame.java — per-step snapshot record
-- BfsRunner.java, DfsRunner.java — algorithm drivers producing frame lists
-- PlaybackController.java — step/play/pause/reset playback over frames
-- GraphPresets.java — built-in sample graphs
-- GraphVisualPane.java — force-directed Canvas renderer with node/edge colouring
-- AlgorithmLabController.java — sixth GUI page with full BFS/DFS simulation
+- AlgorithmFrame.java — per-step snapshot record (13 fields, 11 AlgorithmType values)
+- 11 algorithm runners: BFS, DFS, Dijkstra, Bellman-Ford, Topo Sort, A*,
+  Prim, Kruskal, SCC (Kosaraju), Bridges, Articulation Points
+- PlaybackController.java — step/play/pause/reset/jumpTo playback over frames
+- GraphPresets.java — built-in sample graphs (directed, undirected, weighted, DAG)
+- GraphVisualPane.java — force-directed Canvas renderer with node/edge colouring,
+  interactive edit mode, bridge/SCC/AP overlays
+- AlgorithmLabController.java — sixth GUI page with full algorithm simulation,
+  compare mode, and scenario save/load
+- GraphAlgorithmCatalog — typed metadata + centralized dispatch for all 11 algorithms
 - NavigationPage updated to six pages
 
 ### Consolidation — Visual-First Architecture
@@ -93,9 +97,9 @@ JavaFxToolkitExtension with bounded startup timeout.
 - 7 structure families, 17 implementations
 - 14 visual panes covering all families + GraphVisualPane
 - Full Explore and Compare modes with visual rendering
-- Algorithm Lab with BFS/DFS simulation on configurable graphs
+- Algorithm Lab with 11 graph algorithms, compare mode, and scenario save/load
 - Six-page GUI shell (Explore, Compare, Learn, Activity, Settings, Algorithm Lab)
-- 809 tests, 0 failures
+- 930+ tests, 0 failures
 - Clean CI with Xvfb and coverage reporting
 - Structured visual state architecture (VisualState sealed hierarchy)
 - Reusable visual primitives (UiComponents, VisualStateHost)

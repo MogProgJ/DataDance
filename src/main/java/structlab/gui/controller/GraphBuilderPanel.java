@@ -85,6 +85,7 @@ public class GraphBuilderPanel extends VBox {
         // ── Node list ───────────────────────────────────────
         nodeList = new ListView<>();
         nodeList.getStyleClass().add("graph-builder-list");
+        nodeList.setCellFactory(lv -> new StyledListCell<>());
         nodeList.setPrefHeight(70);
         nodeList.setMaxHeight(90);
 
@@ -131,6 +132,7 @@ public class GraphBuilderPanel extends VBox {
         // ── Edge list ───────────────────────────────────────
         edgeList = new ListView<>();
         edgeList.getStyleClass().add("graph-builder-list");
+        edgeList.setCellFactory(lv -> new StyledListCell<>());
         edgeList.setPrefHeight(80);
         edgeList.setMaxHeight(100);
 
@@ -301,5 +303,32 @@ public class GraphBuilderPanel extends VBox {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    /**
+     * Custom ListCell that toggles a style class for selection instead of
+     * relying on the CSS <code>:selected</code> pseudo-class (which Sonar
+     * flags as non-standard).
+     */
+    private static class StyledListCell<T> extends ListCell<T> {
+        private static final String SELECTED_CLASS = "graph-builder-list-selected";
+
+        StyledListCell() {
+            selectedProperty().addListener((obs, was, now) -> {
+                if (Boolean.TRUE.equals(now)) {
+                    if (!getStyleClass().contains(SELECTED_CLASS)) {
+                        getStyleClass().add(SELECTED_CLASS);
+                    }
+                } else {
+                    getStyleClass().remove(SELECTED_CLASS);
+                }
+            });
+        }
+
+        @Override
+        protected void updateItem(T item, boolean empty) {
+            super.updateItem(item, empty);
+            setText(empty || item == null ? null : item.toString());
+        }
     }
 }

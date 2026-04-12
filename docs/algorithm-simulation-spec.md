@@ -1,9 +1,12 @@
 # Algorithm Simulation — Specification (Draft)
 
-> Status: **partially implemented** — BFS and DFS are working with
-> Graph.java, BfsRunner, DfsRunner, PlaybackController, GraphPresets,
-> GraphVisualPane, and AlgorithmLabController.  Dijkstra remains
-> planned.  This document is the companion to
+> Status: **implemented** — 11 algorithms (BFS, DFS, Dijkstra,
+> Bellman-Ford, Topo Sort, A*, Prim, Kruskal, SCC, Bridges,
+> Articulation Points) are working with Graph.java, typed
+> `GraphAlgorithmCatalog` dispatch, `PlaybackController`,
+> `GraphPresets`, `GraphVisualPane`, and `AlgorithmLabController`.
+> Compare mode and scenario save/load are functional.
+> This document is the companion to
 > [future-algorithm-lab.md](future-algorithm-lab.md).
 
 ---

@@ -16,6 +16,7 @@ import structlab.gui.visual.GraphVisualPane;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Explore-mode graph algorithm workspace.
@@ -46,12 +47,21 @@ public class AlgorithmLabController {
     private ComboBox<String> algorithmCombo;
     private ComboBox<String> sourceCombo;
     private ComboBox<String> targetCombo;
+    private Label algoHintLabel;
+    private VBox sourceSection;
+    private VBox targetSection;
+    private Label targetHintLabel;
     private Button runBtn, resetBtn;
     private Button playBtn, pauseBtn, nextBtn, prevBtn, toStartBtn, toEndBtn;
     private Slider speedSlider;
     private Label speedLabel;
     private Label frameLabel;
     private GraphBuilderPanel builderPanel;
+
+    // Compare summary
+    private Label comparePrimaryLabel;
+    private Label compareSecondaryLabel;
+    private Label compareSummaryLabel;
 
     // Info panel
     private Label discoveryLabel;
@@ -115,30 +125,32 @@ public class AlgorithmLabController {
         algorithmCombo.setMaxWidth(Double.MAX_VALUE);
         algorithmCombo.getStyleClass().add("algo-combo");
         algorithmCombo.setItems(FXCollections.observableArrayList(
-                "BFS", "DFS", "Dijkstra", "Bellman-Ford", "Topo Sort", "A*",
-                "Prim (MST)", "Kruskal (MST)", "SCC (Kosaraju)",
-                "Bridges", "Articulation Points"));
+                GraphAlgorithmCatalog.displayLabels()));
         algorithmCombo.getSelectionModel().selectFirst();
-        sectionBody(algoSection).getChildren().add(algorithmCombo);
+        algorithmCombo.setOnAction(e -> onAlgorithmSelected());
+        algoHintLabel = new Label("");
+        algoHintLabel.getStyleClass().add("algo-preset-desc");
+        algoHintLabel.setWrapText(true);
+        sectionBody(algoSection).getChildren().addAll(algorithmCombo, algoHintLabel);
 
         // Source selection
-        VBox sourceSection = buildSection("SOURCE NODE");
+        sourceSection = buildSection("SOURCE NODE");
         sourceCombo = new ComboBox<>();
         sourceCombo.setMaxWidth(Double.MAX_VALUE);
         sourceCombo.getStyleClass().add("algo-combo");
         sourceCombo.setPromptText("Select source...");
         sectionBody(sourceSection).getChildren().add(sourceCombo);
 
-        // Target selection (Dijkstra)
-        VBox targetSection = buildSection("TARGET NODE");
+        // Target selection
+        targetSection = buildSection("TARGET NODE");
         targetCombo = new ComboBox<>();
         targetCombo.setMaxWidth(Double.MAX_VALUE);
         targetCombo.getStyleClass().add("algo-combo");
         targetCombo.setPromptText("No target (full tree)");
-        Label targetHint = new Label("Optional — set for shortest-path mode");
-        targetHint.getStyleClass().add("algo-preset-desc");
-        targetHint.setWrapText(true);
-        sectionBody(targetSection).getChildren().addAll(targetCombo, targetHint);
+        targetHintLabel = new Label("Optional — set for shortest-path mode");
+        targetHintLabel.getStyleClass().add("algo-preset-desc");
+        targetHintLabel.setWrapText(true);
+        sectionBody(targetSection).getChildren().addAll(targetCombo, targetHintLabel);
 
         // Run / Reset
         VBox actionSection = new VBox(6);
@@ -178,9 +190,7 @@ public class AlgorithmLabController {
         compareAlgoCombo.setMaxWidth(Double.MAX_VALUE);
         compareAlgoCombo.getStyleClass().add("algo-combo");
         compareAlgoCombo.setItems(FXCollections.observableArrayList(
-                "BFS", "DFS", "Dijkstra", "Bellman-Ford", "Topo Sort", "A*",
-                "Prim (MST)", "Kruskal (MST)", "SCC (Kosaraju)",
-                "Bridges", "Articulation Points"));
+                GraphAlgorithmCatalog.displayLabels()));
         compareAlgoCombo.setPromptText("Compare algorithm...");
         compareAlgoCombo.setVisible(false);
         compareAlgoCombo.setManaged(false);
@@ -221,8 +231,15 @@ public class AlgorithmLabController {
         graphScroll.getStyleClass().add("visual-scroll");
         VBox.setVgrow(graphScroll, Priority.ALWAYS);
 
+        // Primary workspace label
+        comparePrimaryLabel = new Label("");
+        comparePrimaryLabel.getStyleClass().addAll("section-header", "compare-header");
+        comparePrimaryLabel.setPadding(new Insets(4, 8, 4, 8));
+        comparePrimaryLabel.setVisible(false);
+        comparePrimaryLabel.setManaged(false);
+
         HBox playbackBar = buildPlaybackBar();
-        primaryWorkspace = new VBox(0, graphScroll, playbackBar);
+        primaryWorkspace = new VBox(0, comparePrimaryLabel, graphScroll, playbackBar);
         primaryWorkspace.getStyleClass().add("algo-workspace-content");
         VBox.setVgrow(primaryWorkspace, Priority.ALWAYS);
         HBox.setHgrow(primaryWorkspace, Priority.ALWAYS);
@@ -233,11 +250,16 @@ public class AlgorithmLabController {
         compareScroll.getStyleClass().add("visual-scroll");
         VBox.setVgrow(compareScroll, Priority.ALWAYS);
 
-        Label compareLabel = new Label("COMPARE");
-        compareLabel.getStyleClass().addAll("section-header", "compare-header");
-        compareLabel.setPadding(new Insets(4, 8, 4, 8));
+        compareSecondaryLabel = new Label("COMPARE");
+        compareSecondaryLabel.getStyleClass().addAll("section-header", "compare-header");
+        compareSecondaryLabel.setPadding(new Insets(4, 8, 4, 8));
 
-        compareWorkspacePane = new VBox(0, compareLabel, compareScroll);
+        compareSummaryLabel = new Label("");
+        compareSummaryLabel.getStyleClass().add("algo-preset-desc");
+        compareSummaryLabel.setWrapText(true);
+        compareSummaryLabel.setPadding(new Insets(2, 8, 2, 8));
+
+        compareWorkspacePane = new VBox(0, compareSecondaryLabel, compareSummaryLabel, compareScroll);
         compareWorkspacePane.getStyleClass().add("algo-workspace-content");
         compareWorkspacePane.getStyleClass().add("compare-workspace");
         VBox.setVgrow(compareWorkspacePane, Priority.ALWAYS);
@@ -410,24 +432,52 @@ public class AlgorithmLabController {
             graphPane.setGraph(currentGraph, currentPreset.weighted());
         }
 
+        syncCompareGraph();
         playback.clear();
         runBtn.setDisable(currentGraph == null || currentGraph.nodeCount() == 0);
         resetBtn.setDisable(true);
         setPlaybackDisabled(true);
         clearInfoPanel();
         updateFrameLabel();
+        onAlgorithmSelected();
     }
 
     private void onBuilderGraphChanged(Graph graph) {
         this.currentGraph = graph;
         populateNodeCombos();
         graphPane.setGraph(graph, builderPanel.isWeighted());
+        syncCompareGraph();
         playback.clear();
         runBtn.setDisable(graph.nodeCount() == 0);
         resetBtn.setDisable(true);
         setPlaybackDisabled(true);
         clearInfoPanel();
         updateFrameLabel();
+    }
+
+    /** Updates control visibility and hint text based on the selected algorithm spec. */
+    private void onAlgorithmSelected() {
+        GraphAlgorithmSpec spec = selectedSpec();
+        if (spec == null) return;
+
+        // Source visibility
+        boolean needsSource = spec.sourceRequired();
+        sourceSection.setVisible(needsSource);
+        sourceSection.setManaged(needsSource);
+
+        // Target visibility
+        boolean showTarget = spec.targetMode() != GraphAlgorithmSpec.TargetMode.NONE;
+        targetSection.setVisible(showTarget);
+        targetSection.setManaged(showTarget);
+        if (showTarget) {
+            targetHintLabel.setText(
+                    spec.targetMode() == GraphAlgorithmSpec.TargetMode.REQUIRED
+                            ? "Required — select a target node"
+                            : "Optional — set for shortest-path mode");
+        }
+
+        // Hint label
+        algoHintLabel.setText(spec.hint());
     }
 
     private void populateNodeCombos() {
@@ -445,12 +495,31 @@ public class AlgorithmLabController {
 
     private void onRun() {
         if (currentGraph == null) return;
-        String algo = algorithmCombo.getValue();
-        if (algo == null) return;
+        GraphAlgorithmSpec spec = selectedSpec();
+        if (spec == null) return;
 
-        boolean needsSource = !isSourceFreeAlgorithm(algo);
+        // Validate graph compatibility
+        if (!spec.supportsGraph(currentGraph)) {
+            String need = spec.directedOk() ? "directed" : "undirected";
+            showAlgorithmError("Cannot run " + spec.displayLabel(),
+                    spec.displayLabel() + " requires a " + need + " graph.");
+            return;
+        }
+
         String source = sourceCombo.getValue();
-        if (needsSource && (source == null || source.isEmpty())) return;
+        if (spec.sourceRequired() && (source == null || source.isEmpty())) {
+            showAlgorithmError("Source required",
+                    spec.displayLabel() + " requires a source node.");
+            return;
+        }
+
+        String targetVal = targetCombo.getValue();
+        String target = (targetVal == null || targetVal.startsWith("—")) ? null : targetVal;
+        if (spec.targetMode() == GraphAlgorithmSpec.TargetMode.REQUIRED && target == null) {
+            showAlgorithmError("Target required",
+                    spec.displayLabel() + " requires a target node.");
+            return;
+        }
 
         // Exit edit mode when running
         if (graphPane.isEditMode()) {
@@ -460,7 +529,7 @@ public class AlgorithmLabController {
 
         stopAutoPlay();
 
-        List<AlgorithmFrame> frames = runAlgorithm(algo, source);
+        List<AlgorithmFrame> frames = dispatchRun(spec, source, target);
         if (frames == null) return;
 
         playback.load(frames);
@@ -470,64 +539,91 @@ public class AlgorithmLabController {
 
         // Compare mode: run the second algorithm
         if (compareMode) {
-            String compareAlgo = compareAlgoCombo.getValue();
-            if (compareAlgo != null) {
-                List<AlgorithmFrame> compareFrames = runAlgorithm(compareAlgo, source);
-                if (compareFrames != null) {
-                    comparePlayback.load(compareFrames);
-                    AlgorithmFrame first = comparePlayback.current();
-                    if (first != null) comparePane.renderFrame(first);
-                }
-            }
+            runCompareAlgorithm(source);
         }
     }
 
-    /** Returns true for algorithms that don't need a source node. */
-    private static boolean isSourceFreeAlgorithm(String algo) {
-        return "Topo Sort".equals(algo)
-                || "Kruskal (MST)".equals(algo)
-                || "SCC (Kosaraju)".equals(algo)
-                || "Bridges".equals(algo)
-                || "Articulation Points".equals(algo);
+    /** Resolves the currently selected spec from the algorithm combo. */
+    GraphAlgorithmSpec selectedSpec() {
+        String label = algorithmCombo.getValue();
+        return label != null ? GraphAlgorithmCatalog.byLabel(label) : null;
     }
 
-    private List<AlgorithmFrame> runAlgorithm(String algo, String source) {
+    /** Central dispatch using the catalog. */
+    private List<AlgorithmFrame> dispatchRun(GraphAlgorithmSpec spec,
+                                              String source, String target) {
+        try {
+            return GraphAlgorithmCatalog.run(spec, currentGraph,
+                    source, target, graphPane.getNodePositions());
+        } catch (IllegalArgumentException ex) {
+            showAlgorithmError("Cannot run " + spec.displayLabel(), ex.getMessage());
+            return null;
+        }
+    }
+
+    /** Runs the compare algorithm and syncs the compare pane. */
+    private void runCompareAlgorithm(String source) {
+        String compareLabel = compareAlgoCombo.getValue();
+        if (compareLabel == null) return;
+        GraphAlgorithmSpec compareSpec = GraphAlgorithmCatalog.byLabel(compareLabel);
+        if (compareSpec == null) return;
+
+        // Validate compare algorithm against graph
+        if (!compareSpec.supportsGraph(currentGraph)) {
+            compareSummaryLabel.setText(compareSpec.displayLabel()
+                    + " is not compatible with this graph type.");
+            comparePlayback.clear();
+            comparePane.renderIdle();
+            return;
+        }
+
         String targetVal = targetCombo.getValue();
         String target = (targetVal == null || targetVal.startsWith("—")) ? null : targetVal;
 
-        try {
-            if ("BFS".equals(algo)) {
-                return BfsRunner.run(currentGraph, source);
-            } else if ("DFS".equals(algo)) {
-                return DfsRunner.run(currentGraph, source);
-            } else if ("Dijkstra".equals(algo)) {
-                return DijkstraRunner.run(currentGraph, source, target);
-            } else if ("Bellman-Ford".equals(algo)) {
-                return BellmanFordRunner.run(currentGraph, source, target);
-            } else if ("A*".equals(algo)) {
-                if (target == null) {
-                    showAlgorithmError("Cannot run A*", "A* requires a target node. Please select a target.");
-                    return null;
-                }
-                return AStarRunner.run(currentGraph, source, target,
-                        graphPane.getNodePositions());
-            } else if ("Prim (MST)".equals(algo)) {
-                return PrimRunner.run(currentGraph, source);
-            } else if ("Kruskal (MST)".equals(algo)) {
-                return KruskalRunner.run(currentGraph);
-            } else if ("SCC (Kosaraju)".equals(algo)) {
-                return SCCRunner.run(currentGraph);
-            } else if ("Bridges".equals(algo)) {
-                return BridgesRunner.run(currentGraph);
-            } else if ("Articulation Points".equals(algo)) {
-                return ArticulationPointsRunner.run(currentGraph);
-            } else {
-                return TopologicalSortRunner.run(currentGraph);
-            }
-        } catch (IllegalArgumentException ex) {
-            showAlgorithmError("Cannot run " + algo, ex.getMessage());
-            return null;
+        if (compareSpec.sourceRequired() && (source == null || source.isEmpty())) {
+            compareSummaryLabel.setText(compareSpec.displayLabel() + " requires a source node.");
+            return;
         }
+        if (compareSpec.targetMode() == GraphAlgorithmSpec.TargetMode.REQUIRED && target == null) {
+            compareSummaryLabel.setText(compareSpec.displayLabel() + " requires a target node.");
+            return;
+        }
+
+        List<AlgorithmFrame> compareFrames = dispatchRun(compareSpec, source, target);
+        if (compareFrames != null) {
+            comparePlayback.load(compareFrames);
+            AlgorithmFrame first = comparePlayback.current();
+            if (first != null) comparePane.renderFrame(first);
+            updateCompareLabels();
+        }
+    }
+
+    /** Keeps the compare pane's graph in sync with the primary graph. */
+    private void syncCompareGraph() {
+        if (!compareMode || currentGraph == null) return;
+        boolean weighted = currentPreset != null
+                ? currentPreset.weighted() : builderPanel.isWeighted();
+        comparePane.setGraph(currentGraph, weighted);
+        Map<String, double[]> positions = graphPane.getNodePositions();
+        if (!positions.isEmpty()) {
+            comparePane.setNodePositions(positions);
+            comparePane.renderIdle();
+        }
+    }
+
+    /** Updates compare workspace labels after running both algorithms. */
+    private void updateCompareLabels() {
+        String primaryLabel = algorithmCombo.getValue();
+        String secondaryLabel = compareAlgoCombo.getValue();
+        comparePrimaryLabel.setText(primaryLabel != null ? primaryLabel : "PRIMARY");
+        compareSecondaryLabel.setText(secondaryLabel != null ? secondaryLabel : "COMPARE");
+
+        // Summary: frame counts
+        int pFrames = playback.frameCount();
+        int cFrames = comparePlayback.frameCount();
+        compareSummaryLabel.setText(
+                (primaryLabel != null ? primaryLabel : "?") + ": " + pFrames + " steps  vs  "
+                + (secondaryLabel != null ? secondaryLabel : "?") + ": " + cFrames + " steps");
     }
 
     private static void showAlgorithmError(String header, String content) {
@@ -603,13 +699,16 @@ public class AlgorithmLabController {
         compareWorkspacePane.setVisible(compareMode);
         compareWorkspacePane.setManaged(compareMode);
 
-        if (compareMode && currentGraph != null) {
-            comparePane.setGraph(currentGraph,
-                    currentPreset != null ? currentPreset.weighted() : builderPanel.isWeighted());
-        }
-        if (!compareMode) {
+        // Compare header labels
+        comparePrimaryLabel.setVisible(compareMode);
+        comparePrimaryLabel.setManaged(compareMode);
+
+        if (compareMode) {
+            syncCompareGraph();
+        } else {
             comparePlayback.clear();
             comparePane.renderIdle();
+            compareSummaryLabel.setText("");
         }
     }
 
@@ -622,6 +721,7 @@ public class AlgorithmLabController {
         if (presetIndex == 0 && builderPanel.isVisible()) {
             builderPanel.loadGraph(graph, graph.isDirected());
         }
+        syncCompareGraph();
         playback.clear();
         runBtn.setDisable(graph.nodeCount() == 0);
         resetBtn.setDisable(true);
@@ -681,11 +781,7 @@ public class AlgorithmLabController {
         // Sync compare view to same step index
         if (compareMode && comparePlayback.isLoaded()) {
             int targetIdx = playback.currentIndex();
-            // Jump compare to same index (clamped to its range)
-            comparePlayback.reset();
-            for (int i = 0; i < targetIdx && comparePlayback.hasNext(); i++) {
-                comparePlayback.next();
-            }
+            comparePlayback.jumpTo(targetIdx);
             AlgorithmFrame cf = comparePlayback.current();
             if (cf != null) comparePane.renderFrame(cf);
         }
@@ -922,42 +1018,49 @@ public class AlgorithmLabController {
 
         try {
             GraphScenario scenario = GraphScenario.loadFrom(file.toPath());
-            currentGraph = scenario.graph();
-            currentPreset = null;
-
-            // Select custom graph preset
-            presetCombo.getSelectionModel().select(0);
-            builderPanel.setVisible(true);
-            builderPanel.setManaged(true);
-            builderPanel.loadGraph(currentGraph, currentGraph.isDirected());
-            presetDescLabel.setText("Loaded: " + scenario.name());
-
-            populateNodeCombos();
-            graphPane.setGraph(currentGraph, scenario.weighted());
-            if (!scenario.nodePositions().isEmpty()) {
-                graphPane.setNodePositions(scenario.nodePositions());
-                graphPane.renderIdle();
-            }
-
-            if (scenario.algorithm() != null) {
-                algorithmCombo.getSelectionModel().select(scenario.algorithm());
-            }
-            if (scenario.source() != null && currentGraph.hasNode(scenario.source())) {
-                sourceCombo.getSelectionModel().select(scenario.source());
-            }
-            if (scenario.target() != null && currentGraph.hasNode(scenario.target())) {
-                targetCombo.getSelectionModel().select(scenario.target());
-            }
-
-            playback.clear();
-            runBtn.setDisable(currentGraph.nodeCount() == 0);
-            resetBtn.setDisable(true);
-            setPlaybackDisabled(true);
-            clearInfoPanel();
-            updateFrameLabel();
+            applyScenario(scenario);
         } catch (Exception ex) {
             showAlgorithmError("Load failed", ex.getMessage());
         }
+    }
+
+    /** Applies a loaded scenario to the workspace — separated for testability. */
+    void applyScenario(GraphScenario scenario) {
+        currentGraph = scenario.graph();
+        currentPreset = null;
+
+        // Select custom graph preset
+        presetCombo.getSelectionModel().select(0);
+        builderPanel.setVisible(true);
+        builderPanel.setManaged(true);
+        builderPanel.loadGraph(currentGraph, currentGraph.isDirected());
+        presetDescLabel.setText("Loaded: " + scenario.name());
+
+        populateNodeCombos();
+        graphPane.setGraph(currentGraph, scenario.weighted());
+        if (!scenario.nodePositions().isEmpty()) {
+            graphPane.setNodePositions(scenario.nodePositions());
+            graphPane.renderIdle();
+        }
+
+        if (scenario.algorithm() != null) {
+            algorithmCombo.getSelectionModel().select(scenario.algorithm());
+        }
+        if (scenario.source() != null && currentGraph.hasNode(scenario.source())) {
+            sourceCombo.getSelectionModel().select(scenario.source());
+        }
+        if (scenario.target() != null && currentGraph.hasNode(scenario.target())) {
+            targetCombo.getSelectionModel().select(scenario.target());
+        }
+
+        syncCompareGraph();
+        playback.clear();
+        runBtn.setDisable(currentGraph.nodeCount() == 0);
+        resetBtn.setDisable(true);
+        setPlaybackDisabled(true);
+        clearInfoPanel();
+        updateFrameLabel();
+        onAlgorithmSelected();
     }
 
     // ── Helpers ──────────────────────────────────────────────
