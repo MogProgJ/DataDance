@@ -1,10 +1,7 @@
 package structlab.gui.visual;
 
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.*;
 
@@ -12,6 +9,9 @@ import javafx.scene.layout.*;
  * Visual comparison card for one implementation within Compare mode.
  * Shows implementation name, status badge, returned value, visual state
  * (if supported), and an expandable trace detail section.
+ * <p>Uses {@link VisualStateHost} for the state display area, which
+ * automatically renders visual panes for supported structure types
+ * and falls back to text for unsupported ones.</p>
  */
 public class ComparisonCardPane extends VBox {
 
@@ -19,15 +19,11 @@ public class ComparisonCardPane extends VBox {
     private final Label statusBadge;
     private final Label returnedLabel;
     private final Label opsLabel;
-    private final StackPane stateHost;
-    private final TextArea fallbackState;
+    private final VisualStateHost visualHost;
     private final VBox traceSection;
     private final TextArea traceArea;
     private final Label traceToggle;
     private boolean traceExpanded = false;
-
-    // own visual pane cache — not shared with explore or other cards
-    private final VisualPaneCache paneCache = new VisualPaneCache();
 
     public ComparisonCardPane() {
         getStyleClass().add("comparison-card");
@@ -60,16 +56,12 @@ public class ComparisonCardPane extends VBox {
 
         metrics.getChildren().addAll(returnedLabel, opsLabel);
 
-        // ── State host ──────────────────────────────
-        fallbackState = new TextArea();
-        fallbackState.setEditable(false);
-        fallbackState.setWrapText(true);
-        fallbackState.getStyleClass().add("comparison-card-state-text");
-        fallbackState.setPrefHeight(120);
-        fallbackState.setMaxHeight(160);
-
-        stateHost = new StackPane(fallbackState);
-        stateHost.getStyleClass().add("comparison-card-state");
+        // ── State host (visual-first, text fallback) ─
+        visualHost = new VisualStateHost("");
+        visualHost.getStyleClass().add("comparison-card-state");
+        visualHost.getFallbackArea().getStyleClass().add("comparison-card-state-text");
+        visualHost.getFallbackArea().setPrefHeight(120);
+        visualHost.getFallbackArea().setMaxHeight(160);
 
         // ── Trace section (collapsed by default) ────
         traceToggle = new Label("▸ Show trace details");
@@ -88,7 +80,7 @@ public class ComparisonCardPane extends VBox {
         traceSection = new VBox(4, traceToggle, traceArea);
         traceSection.getStyleClass().add("comparison-card-trace");
 
-        getChildren().addAll(header, metrics, stateHost, traceSection);
+        getChildren().addAll(header, metrics, visualHost, traceSection);
     }
 
     /**
@@ -100,8 +92,7 @@ public class ComparisonCardPane extends VBox {
         setStatusBadge("IDLE", "comparison-status-idle");
         returnedLabel.setText("");
         opsLabel.setText("");
-        fallbackState.setText("");
-        stateHost.getChildren().setAll(fallbackState);
+        visualHost.clear();
         traceArea.setText("");
         collapseTrace();
     }
@@ -114,7 +105,7 @@ public class ComparisonCardPane extends VBox {
         setStatusBadge("READY", "comparison-status-ready");
         returnedLabel.setText("");
         opsLabel.setText("");
-        showState(rawSnapshot, renderedState);
+        visualHost.render(rawSnapshot, renderedState, 200);
         traceArea.setText("");
     }
 
@@ -138,39 +129,8 @@ public class ComparisonCardPane extends VBox {
             returnedLabel.setText("");
         }
         opsLabel.setText(traceStepCount + " step" + (traceStepCount == 1 ? "" : "s"));
-        showState(rawSnapshot, renderedState);
+        visualHost.render(rawSnapshot, renderedState, 200);
         traceArea.setText(traceText);
-    }
-
-    private void showState(String rawSnapshot, String renderedState) {
-        if (rawSnapshot != null && VisualStateFactory.isSupported(rawSnapshot)) {
-            Node visual = createOrUpdateVisual(rawSnapshot);
-            if (visual != null) {
-                ScrollPane scroll = new ScrollPane(visual);
-                scroll.setFitToWidth(true);
-                scroll.getStyleClass().add("visual-scroll");
-                scroll.setMaxHeight(200);
-                stateHost.getChildren().setAll(scroll);
-                return;
-            }
-        }
-        fallbackState.setText(renderedState != null ? renderedState : "");
-        stateHost.getChildren().setAll(fallbackState);
-    }
-
-    /**
-     * Per-card visual pane creation via shared {@link VisualPaneCache}.
-     */
-    private Node createOrUpdateVisual(String snapshot) {
-        String type = StateModelParser.structureType(snapshot);
-        if ("HeapPriorityQueue".equals(type)) {
-            HeapStateModel m = StateModelParser.parseHeapPriorityQueue(snapshot);
-            return paneCache.updateAsPriorityQueue(m);
-        }
-
-        VisualState state = StateModelParser.parse(snapshot);
-        if (state == null) return null;
-        return paneCache.update(state);
     }
 
     private void toggleTrace() {

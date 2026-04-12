@@ -59,6 +59,8 @@ Do not introduce upward dependencies.
 9. Wire into `VisualPaneCache`
 10. Add canonical operations in `CanonicalOperationRegistry` if needed
 11. Update `structure-families.md`
+12. Use `UiComponents` static methods for shared UI elements when
+    building page content (e.g. `card()`, `styledLabel()`, `buttonRow()`)
 
 ---
 

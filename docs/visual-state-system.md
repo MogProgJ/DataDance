@@ -59,16 +59,20 @@ The unified `parse()` method is used by `VisualStateFactory` and
 Holds lazy-initialized pane instances and dispatches `VisualState`
 updates to the correct pane via `instanceof` checks.
 
-Two usage patterns:
-- `VisualStateFactory` holds a single static cache (Explore mode — one session)
-- `ComparisonCardPane` holds one cache per card (Compare mode — N implementations)
+Each `VisualStateHost` owns one `VisualPaneCache` instance.  This
+means Explore mode (single host) and Compare mode (one host per card)
+have fully independent caches.
 
 ### VisualStateFactory
 
-Static API for Explore mode:
+Static API for legacy/external consumers:
 - `isSupported(snapshot)` — returns true if a visual pane exists
 - `createOrUpdate(snapshot)` — parses and updates the cached pane
 - `reset()` — clears cached panes on session change
+
+> Note: `VisualStateFactory` is superseded by `VisualStateHost` for
+> Explore and Compare rendering.  It remains available for any external
+> code that needs a quick "parse and render" without managing a host.
 
 ### SnapshotParser
 
@@ -100,14 +104,54 @@ Low-level regex-based extraction from snapshot strings.  Methods:
 
 ---
 
+## VisualStateHost
+
+`VisualStateHost` is a reusable `StackPane` component that encapsulates
+the visual-or-text-fallback rendering pattern.  Both Explore and Compare
+modes use it instead of manually managing visual/text switching.
+
+Key API:
+- `render(rawSnapshot, renderedText)` — parses the snapshot, shows a
+  visual pane if supported, otherwise shows the text in a fallback area
+- `render(rawSnapshot, renderedText, maxScrollHeight)` — same, with a
+  height-constrained scroll pane for compact cards
+- `showPlaceholder()` — resets to the prompt-text-only fallback
+- `clear()` — empties the fallback text
+- `resetCache()` — clears cached visual pane instances (on session change)
+- `isShowingVisual()` — returns true if a visual pane is currently shown
+- `getFallbackArea()` — access to the underlying TextArea for CSS customization
+
+Each `VisualStateHost` owns its own `VisualPaneCache` instance, keeping
+Explore and Compare caches fully independent.
+
+---
+
+## UiComponents
+
+`UiComponents` is a static utility class providing shared UI factory
+methods extracted from `MainWindowController`.  These methods produce
+consistently styled JavaFX nodes:
+
+- `styledLabel(text, ...styleClasses)` — Label with CSS classes
+- `sectionHeader(text)` — Label with "section-header" class
+- `monoArea(promptText)` — Non-editable, wrap-enabled TextArea
+- `card(title)` / `cardBody(card)` — VBox card with header
+- `settingsCard(title, desc)` / `settingsCardBody(card)` — Settings-style card
+- `secondaryButton(text)` — Disabled-by-default Button
+- `buttonRow(buttons...)` — HBox with grow priority per button
+- `styledCheck(text, initial)` — Pre-configured CheckBox
+
+New page builders (e.g. AlgorithmLabController) should use these
+methods via `static import` to maintain visual consistency.
+
+---
+
 ## Fallback behavior
 
-If `VisualStateFactory.isSupported()` returns false or `createOrUpdate()`
-returns null, the GUI falls back to a plain `TextArea` showing the text
+If `StateModelParser.parse()` returns null for a snapshot, the
+`VisualStateHost` falls back to a plain `TextArea` showing the text
 rendering from `StructureRenderer`.  This ensures every structure is
 displayable even without a custom visual pane.
-
-The same fallback applies in Compare mode's `ComparisonCardPane`.
 
 ---
 

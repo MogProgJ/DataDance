@@ -20,8 +20,10 @@ import structlab.app.service.*;
 import structlab.gui.*;
 import structlab.gui.visual.ComparisonCardPane;
 import structlab.gui.visual.ComparisonSummaryPane;
-import structlab.gui.visual.VisualStateFactory;
+import structlab.gui.visual.VisualStateHost;
 import structlab.trace.TraceStep;
+
+import static structlab.gui.visual.UiComponents.*;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -57,8 +59,8 @@ public class MainWindowController {
     private ListView<ImplementationSummary> explImplList;
     private Button explOpenBtn;
     private Label explDetailName, explDetailCat, explDetailDesc, explDetailKw;
-    private TextArea explState, explTrace;
-    private StackPane explStateHost;
+    private TextArea explTrace;
+    private VisualStateHost explVisualHost;
     private Label explSessStruct, explSessImpl, explSessOps;
     private Button explResetBtn, explCloseBtn;
     private ListView<OperationInfo> explOpList;
@@ -231,7 +233,7 @@ public class MainWindowController {
         ws.getStyleClass().add("workspace");
         HBox.setHgrow(ws, Priority.ALWAYS);
 
-        VBox detailCard = buildCard("STRUCTURE DETAILS");
+        VBox detailCard = card("STRUCTURE DETAILS");
         VBox detailBody = cardBody(detailCard);
         explDetailName = styledLabel("Select a structure to begin exploring.", "detail-name");
         explDetailCat = styledLabel("", "info-label");
@@ -240,17 +242,15 @@ public class MainWindowController {
         explDetailKw = styledLabel("", "detail-keywords");
         detailBody.getChildren().addAll(explDetailName, explDetailCat, explDetailDesc, explDetailKw);
 
-        VBox stateCard = buildCard("STRUCTURE STATE");
+        VBox stateCard = card("STRUCTURE STATE");
         VBox.setVgrow(stateCard, Priority.ALWAYS);
         VBox stateBody = cardBody(stateCard);
         VBox.setVgrow(stateBody, Priority.ALWAYS);
-        explState = monoArea("Open a session to see the live structure state.");
-        VBox.setVgrow(explState, Priority.ALWAYS);
-        explStateHost = new StackPane(explState);
-        VBox.setVgrow(explStateHost, Priority.ALWAYS);
-        stateBody.getChildren().add(explStateHost);
+        explVisualHost = new VisualStateHost("Open a session to see the live structure state.");
+        VBox.setVgrow(explVisualHost, Priority.ALWAYS);
+        stateBody.getChildren().add(explVisualHost);
 
-        VBox traceCard = buildCard("TRACE LOG");
+        VBox traceCard = card("TRACE LOG");
         VBox traceBody = cardBody(traceCard);
         explTrace = monoArea("Execution traces appear here after operations.");
         explTrace.setPrefHeight(150);
@@ -291,11 +291,11 @@ public class MainWindowController {
         explSessImpl = styledLabel("", "info-label");
         explSessOps = styledLabel("", "info-label");
 
-        explResetBtn = secondaryBtn("Reset");
+        explResetBtn = secondaryButton("Reset");
         explResetBtn.setOnAction(e -> handleExploreReset());
-        explCloseBtn = secondaryBtn("Close");
+        explCloseBtn = secondaryButton("Close");
         explCloseBtn.setOnAction(e -> handleExploreCloseSession());
-        HBox sessBtns = growBtns(explResetBtn, explCloseBtn);
+        HBox sessBtns = buttonRow(explResetBtn, explCloseBtn);
         sessCard.getChildren().addAll(
                 styledLabel("SESSION", "section-header"),
                 explSessStruct, explSessImpl, explSessOps, sessBtns);
@@ -465,23 +465,12 @@ public class MainWindowController {
 
     private void refreshExploreState() {
         if (!service.hasActiveSession()) {
-            explStateHost.getChildren().setAll(explState);
-            explState.clear();
+            explVisualHost.showPlaceholder();
             return;
         }
         String raw = service.getRawState();
-        if (VisualStateFactory.isSupported(raw)) {
-            Node visual = VisualStateFactory.createOrUpdate(raw);
-            if (visual != null) {
-                ScrollPane scroll = new ScrollPane(visual);
-                scroll.setFitToWidth(true);
-                scroll.getStyleClass().add("visual-scroll");
-                explStateHost.getChildren().setAll(scroll);
-                return;
-            }
-        }
-        explState.setText(service.getRenderedState());
-        explStateHost.getChildren().setAll(explState);
+        String rendered = service.getRenderedState();
+        explVisualHost.render(raw, rendered);
     }
 
     private void refreshExploreTrace() {
@@ -534,12 +523,11 @@ public class MainWindowController {
 
     private void clearExploreSession() {
         sessionActive = false;
-        VisualStateFactory.reset();
+        explVisualHost.resetCache();
+        explVisualHost.showPlaceholder();
         explSessStruct.setText("No active session");
         explSessImpl.setText("");
         explSessOps.setText("");
-        explStateHost.getChildren().setAll(explState);
-        explState.clear();
         explTrace.clear();
         explOpList.getItems().clear();
         explHistory.getItems().clear();
@@ -632,11 +620,11 @@ public class MainWindowController {
         cmpImplCount = styledLabel("", "info-label");
         cmpOpsCount = styledLabel("", "info-label");
 
-        cmpResetBtn = secondaryBtn("Reset All");
+        cmpResetBtn = secondaryButton("Reset All");
         cmpResetBtn.setOnAction(e -> handleCompareReset());
-        cmpCloseBtn = secondaryBtn("Close");
+        cmpCloseBtn = secondaryButton("Close");
         cmpCloseBtn.setOnAction(e -> handleCompareClose());
-        HBox sessBtns = growBtns(cmpResetBtn, cmpCloseBtn);
+        HBox sessBtns = buttonRow(cmpResetBtn, cmpCloseBtn);
         sessCard.getChildren().addAll(
                 styledLabel("COMPARISON", "section-header"),
                 cmpSessLabel, cmpImplCount, cmpOpsCount, sessBtns);
@@ -1069,30 +1057,30 @@ public class MainWindowController {
         hero.getStyleClass().add("hero-section");
 
         // Motion
-        VBox motionCard = buildSettingsCard("MOTION & ANIMATION",
+        VBox motionCard = settingsCard("MOTION & ANIMATION",
                 "Control page transitions and UI animations.");
         CheckBox motionCb = styledCheck("Enable page transitions", settings.isMotionEnabled());
         motionCb.selectedProperty().bindBidirectional(settings.motionEnabledProperty());
-        settingsBody(motionCard).getChildren().add(motionCb);
+        settingsCardBody(motionCard).getChildren().add(motionCb);
 
         // Display
-        VBox displayCard = buildSettingsCard("DISPLAY",
+        VBox displayCard = settingsCard("DISPLAY",
                 "Adjust layout density and information presentation.");
         CheckBox compactCb = styledCheck("Compact mode", settings.isCompactMode());
         compactCb.selectedProperty().bindBidirectional(settings.compactModeProperty());
         CheckBox densityCb = styledCheck("High density layout", settings.isHighDensity());
         densityCb.selectedProperty().bindBidirectional(settings.highDensityProperty());
-        settingsBody(displayCard).getChildren().addAll(compactCb, densityCb);
+        settingsCardBody(displayCard).getChildren().addAll(compactCb, densityCb);
 
         // Trace
-        VBox traceCard = buildSettingsCard("TRACE OUTPUT",
+        VBox traceCard = settingsCard("TRACE OUTPUT",
                 "Control the level of detail in execution traces.");
         CheckBox traceCb = styledCheck("Show raw trace output", settings.isShowRawTraces());
         traceCb.selectedProperty().bindBidirectional(settings.showRawTracesProperty());
-        settingsBody(traceCard).getChildren().add(traceCb);
+        settingsCardBody(traceCard).getChildren().add(traceCb);
 
         // About
-        VBox aboutCard = buildSettingsCard("ABOUT",
+        VBox aboutCard = settingsCard("ABOUT",
                 "StructLab — Data Structure Simulator");
         int totalImpls = service.getAllStructures().stream()
                 .mapToInt(s -> service.getImplementations(s.id()).size()).sum();
@@ -1101,7 +1089,7 @@ public class MainWindowController {
         Label structures = styledLabel(
                 service.getAllStructures().size() + " structure families  \u00b7  "
                 + totalImpls + " implementations", "info-label");
-        settingsBody(aboutCard).getChildren().addAll(version, structures);
+        settingsCardBody(aboutCard).getChildren().addAll(version, structures);
 
         content.getChildren().addAll(hero, motionCard, displayCard, traceCard, aboutCard);
 
@@ -1109,88 +1097,6 @@ public class MainWindowController {
         scroll.setFitToWidth(true);
         scroll.getStyleClass().add("page-scroll");
         return scroll;
-    }
-
-    // ══════════════════════════════════════════════════════════
-    //  UI Builder Helpers
-    // ══════════════════════════════════════════════════════════
-
-    private Label styledLabel(String text, String... styleClasses) {
-        Label l = new Label(text);
-        l.getStyleClass().addAll(styleClasses);
-        return l;
-    }
-
-    private TextArea monoArea(String prompt) {
-        TextArea ta = new TextArea();
-        ta.setEditable(false);
-        ta.setWrapText(true);
-        ta.getStyleClass().add("mono-area");
-        ta.setPromptText(prompt);
-        return ta;
-    }
-
-    private VBox buildCard(String title) {
-        VBox card = new VBox();
-        card.getStyleClass().add("card");
-
-        HBox header = new HBox();
-        header.getStyleClass().add("card-header");
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.getChildren().add(styledLabel(title, "card-title"));
-
-        VBox body = new VBox(4);
-        body.getStyleClass().add("card-body");
-
-        card.getChildren().addAll(header, body);
-        return card;
-    }
-
-    private VBox cardBody(VBox card) {
-        return (VBox) card.getChildren().get(1);
-    }
-
-    private VBox buildSettingsCard(String title, String description) {
-        VBox card = new VBox();
-        card.getStyleClass().add("settings-card");
-
-        VBox header = new VBox(4);
-        header.getStyleClass().add("settings-card-header");
-        header.getChildren().addAll(
-                styledLabel(title, "settings-card-title"),
-                styledLabel(description, "settings-card-desc"));
-
-        VBox body = new VBox(12);
-        body.getStyleClass().add("settings-card-body");
-
-        card.getChildren().addAll(header, body);
-        return card;
-    }
-
-    private VBox settingsBody(VBox card) {
-        return (VBox) card.getChildren().get(1);
-    }
-
-    private CheckBox styledCheck(String text, boolean initial) {
-        CheckBox cb = new CheckBox(text);
-        cb.setSelected(initial);
-        cb.getStyleClass().add("settings-check");
-        return cb;
-    }
-
-    private Button secondaryBtn(String text) {
-        Button btn = new Button(text);
-        btn.getStyleClass().add("secondary-button");
-        btn.setDisable(true);
-        btn.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(btn, Priority.ALWAYS);
-        return btn;
-    }
-
-    private HBox growBtns(Button... btns) {
-        HBox box = new HBox(6, btns);
-        box.setPadding(new Insets(6, 0, 0, 0));
-        return box;
     }
 
     // ══════════════════════════════════════════════════════════

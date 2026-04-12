@@ -1,7 +1,7 @@
 # GUI Shell and Pages
 
 The StructLab desktop application is a JavaFX 21 single-window shell with
-five navigation pages.
+six navigation pages.
 
 ---
 
@@ -19,6 +19,7 @@ five navigation pages.
 │ │ Learn   │ │                                      │   │
 │ │Activity │ │                                      │   │
 │ │Settings │ │                                      │   │
+│ │Alg. Lab │ │                                      │   │
 │ └─────────┘ └──────────────────────────────────────┘   │
 ├────────────────────────────────────────────────────────┤
 │  Status bar                                            │
@@ -27,7 +28,7 @@ five navigation pages.
 
 - **Toolbar**: App title on the left, contextual status on the right
   (e.g. "Discovery Mode" or "Session: Stack / Array Stack")
-- **Sidebar**: Navigation buttons for the five pages
+- **Sidebar**: Navigation buttons for the six pages
 - **Page content**: Swapped based on the active `NavigationPage`
 - **Status bar**: Feedback messages ("Ready", "Session opened", etc.)
 
@@ -35,7 +36,7 @@ five navigation pages.
 
 ## Navigation model
 
-`NavigationPage` is an enum with five values.  The controller swaps
+`NavigationPage` is an enum with six values.  The controller swaps
 the center content when a sidebar button is clicked.  Only one page
 is visible at a time.  Session state is preserved when switching pages.
 
@@ -54,8 +55,10 @@ The primary single-session workspace.
 - **Session panel** (right): Session info, operation list, argument
   field + Execute button, operation history, Reset/Close controls.
 
-The visual state pane is produced by `VisualStateFactory`, which
-delegates to `VisualPaneCache`.
+The visual state pane is produced by `VisualStateHost`, a reusable
+StackPane component that encapsulates the visual-or-text-fallback
+pattern.  It owns its own `VisualPaneCache` and delegates to
+`StateModelParser` for snapshot parsing.
 
 ### Compare
 
@@ -69,6 +72,8 @@ Side-by-side comparison workspace.
   returned value, expandable trace details
 
 See [compare-workspace.md](compare-workspace.md) for full detail.
+Each `ComparisonCardPane` uses its own `VisualStateHost` instance
+for visual-or-text-fallback rendering.
 
 ### Learn
 
@@ -85,6 +90,22 @@ operations performed during the current application run.
 
 Application preferences (placeholder for future configuration
 such as theme, animation speed, default family).
+
+### Algorithm Lab
+
+Interactive graph algorithm simulation workspace.
+
+- **Graph panel**: Force-directed Canvas rendering of nodes and edges
+  with colour-coded visited/frontier/unvisited states.
+- **Algorithm selector**: BFS and DFS (first wave); Dijkstra planned.
+- **Playback controls**: Step forward, step back, play/pause, speed
+  slider, reset.
+- **Graph presets**: Built-in sample graphs (small, medium, tree, etc.).
+- **Configuration**: Node count, source node, graph preset selection.
+
+See [future-algorithm-lab.md](future-algorithm-lab.md) for the full
+vision and [algorithm-simulation-spec.md](algorithm-simulation-spec.md)
+for the detailed specification.
 
 ---
 

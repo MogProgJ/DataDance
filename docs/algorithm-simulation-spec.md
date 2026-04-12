@@ -1,8 +1,10 @@
 # Algorithm Simulation — Specification (Draft)
 
-> Status: **draft** — captures requirements for the first-wave algorithms
-> (BFS, DFS, Dijkstra).  No code exists yet.  This document is the
-> companion to [future-algorithm-lab.md](future-algorithm-lab.md).
+> Status: **partially implemented** — BFS and DFS are working with
+> Graph.java, BfsRunner, DfsRunner, PlaybackController, GraphPresets,
+> GraphVisualPane, and AlgorithmLabController.  Dijkstra remains
+> planned.  This document is the companion to
+> [future-algorithm-lab.md](future-algorithm-lab.md).
 
 ---
 

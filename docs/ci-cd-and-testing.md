@@ -33,7 +33,7 @@ In-flight CI for the same branch is cancelled when a new push arrives.
 
 ### Current state
 
-- **741 tests**, 0 failures (as of Phase 2D)
+- **809 tests**, 0 failures (as of Consolidation phase)
 - **88 test files** under `src/test/java/`
 
 ### Test layers

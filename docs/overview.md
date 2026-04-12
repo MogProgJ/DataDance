@@ -50,10 +50,11 @@ Application preferences.
 | Area | Status |
 |------|--------|
 | Core structures | 7 families, 17 implementations |
-| Visual state panes | 14 family-specific panes |
+| Visual state panes | 14 family-specific panes + GraphVisualPane |
 | Compare workspace | Full side-by-side visual comparison |
+| Algorithm Lab | BFS/DFS simulation on configurable graphs |
 | Terminal simulator | Fully functional REPL mode |
-| GUI (JavaFX) | Five-page desktop shell |
+| GUI (JavaFX) | Six-page desktop shell |
 | Trace system | Before/after state, invariant checks, complexity |
 | CI | GitHub Actions with Xvfb, JaCoCo coverage |
 
@@ -74,9 +75,9 @@ Application preferences.
 ```
 ┌────────────────────────────────────────────────────────┐
 │  GUI Shell (JavaFX)                                    │
-│  ┌─────┬─────┬──────┬──────────┬──────────┐           │
-│  │Expl.│Comp.│Learn │ Activity │ Settings │           │
-│  └─────┴─────┴──────┴──────────┴──────────┘           │
+│  ┌─────┬─────┬──────┬──────────┬──────────┬────────┐           │
+│  │Expl.│Comp.│Learn │ Activity │ Settings │Alg.Lab│           │
+│  └─────┴─────┴──────┴──────────┴──────────┴────────┘           │
 │                     ▼                                  │
 │  StructLabService (facade)                             │
 │       │                                                │

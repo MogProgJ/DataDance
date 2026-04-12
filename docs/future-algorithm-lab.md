@@ -1,8 +1,9 @@
 # Future: Algorithm Lab
 
-> Status: **planning only** — no code exists yet.  This document captures the
-> product vision so that future phases can reference a single, agreed-upon
-> direction.
+> Status: **partially implemented** — BFS and DFS are working in the
+> Algorithm Lab GUI page with Graph.java, playback controls, and
+> GraphVisualPane.  Dijkstra and later waves remain planned.  This
+> document captures the full product vision.
 
 ---
 

@@ -48,6 +48,7 @@ Sub-packages:
 - `core.deque` — ArrayDequeCustom, LinkedDeque
 - `core.heap` — BinaryHeap, HeapPriorityQueue
 - `core.hash` — HashTableChaining, HashTableOpenAddressing, HashSetCustom
+- `core.graph` — Graph (directed/undirected, weighted/unweighted adjacency list)
 
 Each structure:
 - Exposes its own minimal interface
@@ -102,8 +103,9 @@ input.  Command handlers live in `app.command`.
 ## 6. GUI (`structlab.gui`)
 
 ### Shell
-`StructLabFxApp` loads FXML; `MainWindowController` manages five pages
-(Explore, Compare, Learn, Activity, Settings) through `NavigationPage`.
+`StructLabFxApp` loads FXML; `MainWindowController` manages six pages
+(Explore, Compare, Learn, Activity, Settings, Algorithm Lab) through
+`NavigationPage`.
 
 ### Visual state system (`gui.visual`)
 See [visual-state-system.md](visual-state-system.md) for full detail.
@@ -112,9 +114,13 @@ Key types:
 - **`VisualState`** — sealed interface implemented by all 13 state model records
 - **`StateModelParser`** — parses snapshot strings into `VisualState` subtypes
 - **`VisualPaneCache`** — manages pane instances and dispatches updates
-- **`VisualStateFactory`** — static entry point for Explore mode
+- **`VisualStateHost`** — reusable StackPane encapsulating the visual-or-text-
+  fallback pattern; used by both Explore and Compare modes
+- **`UiComponents`** — shared static UI factory methods (styledLabel, card,
+  settingsCard, buttonRow, etc.) extracted from the controller
+- **`VisualStateFactory`** — static entry point (legacy; superseded by VisualStateHost)
 - **`ComparisonCardPane`** — per-card visual rendering for Compare mode
-- 14 family-specific visual panes
+- 14 family-specific visual panes + GraphVisualPane
 
 ---
 
@@ -138,12 +144,16 @@ StateModelParser.parse(snapshot)   → VisualState (sealed)
 VisualPaneCache.update(state)      → JavaFX Node
         │
         ▼
-ScrollPane in Explore or Compare host
+VisualStateHost                    visual-or-text-fallback host
+        │
+        ▼
+ScrollPane in Explore or Compare
 ```
 
-The same `VisualPaneCache` logic serves both Explore (static singleton
-in `VisualStateFactory`) and Compare (per-card instance in
-`ComparisonCardPane`).
+`VisualStateHost` owns a `VisualPaneCache` instance and delegates parsing
+to `StateModelParser`.  Both Explore mode (single instance in the
+controller) and Compare mode (per-card instance in `ComparisonCardPane`)
+use `VisualStateHost` for consistent visual/text rendering.
 
 ---
 

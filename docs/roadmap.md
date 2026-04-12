@@ -66,16 +66,39 @@ JavaFxToolkitExtension with bounded startup timeout.
 - Full documentation reorganization
 - Future algorithm lab planning docs
 
+### Phase 3B — Graph Core + Algorithm Lab MVP
+- Graph.java — directed/undirected, weighted/unweighted adjacency-list model
+- AlgorithmFrame.java — per-step snapshot record
+- BfsRunner.java, DfsRunner.java — algorithm drivers producing frame lists
+- PlaybackController.java — step/play/pause/reset playback over frames
+- GraphPresets.java — built-in sample graphs
+- GraphVisualPane.java — force-directed Canvas renderer with node/edge colouring
+- AlgorithmLabController.java — sixth GUI page with full BFS/DFS simulation
+- NavigationPage updated to six pages
+
+### Consolidation — Visual-First Architecture
+- UiComponents.java — shared static UI factory methods extracted from
+  MainWindowController (styledLabel, card, settingsCard, buttonRow, etc.)
+- VisualStateHost.java — reusable StackPane that encapsulates the
+  visual-or-text-fallback rendering pattern
+- MainWindowController refactored: ~80 lines of private helpers removed,
+  Explore rendering delegated to VisualStateHost
+- ComparisonCardPane refactored: 3 fields replaced by single VisualStateHost,
+  2 private methods eliminated
+
 ---
 
 ## Current state
 
 - 7 structure families, 17 implementations
-- 14 visual panes covering all families
+- 14 visual panes covering all families + GraphVisualPane
 - Full Explore and Compare modes with visual rendering
-- 741 tests, 0 failures
+- Algorithm Lab with BFS/DFS simulation on configurable graphs
+- Six-page GUI shell (Explore, Compare, Learn, Activity, Settings, Algorithm Lab)
+- 809 tests, 0 failures
 - Clean CI with Xvfb and coverage reporting
 - Structured visual state architecture (VisualState sealed hierarchy)
+- Reusable visual primitives (UiComponents, VisualStateHost)
 
 ---
 
@@ -88,7 +111,7 @@ hierarchy and VisualPaneCache already provide the hooks:
 - Animate element additions, removals, swaps
 - Configurable speed / step-through mode
 
-### Phase 3B — Enhanced Compare Intelligence
+### Phase 3C — Enhanced Compare Intelligence
 - Diff highlighting between comparison cards
 - Performance timing per implementation
 - Divergence detection and annotation
@@ -99,13 +122,15 @@ Populate the Learn page with structured reference content generated
 from the registry, including complexity tables, invariant descriptions,
 and implementation comparison summaries.
 
-### Phase 4 — Algorithm Lab (Future)
-Algorithm simulation workspace for graph traversal and pathfinding
-algorithms.  See [future-algorithm-lab.md](future-algorithm-lab.md) and
-[algorithm-simulation-spec.md](algorithm-simulation-spec.md).
+### Phase 4 — Algorithm Lab Expansion
+Extend the Algorithm Lab beyond BFS/DFS:
+- Dijkstra (weighted shortest path)
+- Bellman-Ford, Topological Sort
+- Prim, Kruskal (MST)
+- A*, Floyd-Warshall
 
-First wave: BFS, DFS, Dijkstra.
-Future: A*, Bellman-Ford, Prim, Kruskal, Topological Sort, Floyd-Warshall.
+See [future-algorithm-lab.md](future-algorithm-lab.md) and
+[algorithm-simulation-spec.md](algorithm-simulation-spec.md).
 
 ### Ongoing
 - Additional structure families (BST, AVL, Trie, Graph)
