@@ -37,7 +37,11 @@ public final class GraphPresets {
                 weightedDijkstraVsBfs(),
                 weightedTree(),
                 weightedDisconnected(),
-                weightedDirected()
+                weightedDirected(),
+                negativeWeightSimple(),
+                negativeWeightCycle(),
+                dagClassic(),
+                dagDiamond()
         );
     }
 
@@ -278,5 +282,77 @@ public final class GraphPresets {
         return new Preset("Directed Weighted",
                 "6 nodes, 9 directed edges — shows directed shortest-path behavior",
                 g, "S", "T", true);
+    }
+
+    // ── Negative-weight presets (Bellman-Ford) ──────────────
+
+    /**
+     * Directed graph with negative edges — Dijkstra fails, Bellman-Ford correct.
+     * S→A→C costs 5, but S→B→C costs 3 using negative edge B→C(-2).
+     */
+    public static Preset negativeWeightSimple() {
+        Graph g = new Graph(true);
+        g.addEdge("S", "A", 4);
+        g.addEdge("S", "B", 5);
+        g.addEdge("A", "C", 1);
+        g.addEdge("B", "C", -2);
+        g.addEdge("B", "D", 3);
+        g.addEdge("C", "D", 2);
+        return new Preset("Negative Weights",
+                "4 nodes, directed — has negative edge B→C(-2); Dijkstra invalid, use Bellman-Ford",
+                g, "S", "D", true);
+    }
+
+    /**
+     * Directed graph with a negative-weight cycle — shortest paths undefined.
+     * Cycle: B→C→B with total weight -1.
+     */
+    public static Preset negativeWeightCycle() {
+        Graph g = new Graph(true);
+        g.addEdge("S", "A", 1);
+        g.addEdge("A", "B", 2);
+        g.addEdge("B", "C", -3);
+        g.addEdge("C", "B", 1);
+        g.addEdge("C", "D", 4);
+        return new Preset("Negative Cycle",
+                "5 nodes, directed — cycle B→C→B has weight -2; Bellman-Ford detects it",
+                g, "S", "D", true);
+    }
+
+    // ── DAG presets (Topological Sort) ──────────────────────
+
+    /**
+     * Classic DAG for demonstrating topological sort.
+     * Multiple valid orderings exist.
+     */
+    public static Preset dagClassic() {
+        Graph g = new Graph(true);
+        g.addEdge("A", "C");
+        g.addEdge("A", "D");
+        g.addEdge("B", "D");
+        g.addEdge("B", "E");
+        g.addEdge("C", "F");
+        g.addEdge("D", "F");
+        g.addEdge("E", "F");
+        return new Preset("DAG Classic",
+                "6 nodes, directed acyclic — good for topological sort demo",
+                g, "A");
+    }
+
+    /**
+     * DAG with diamond-shaped dependency chains — shows convergent dependencies.
+     */
+    public static Preset dagDiamond() {
+        Graph g = new Graph(true);
+        g.addEdge("S", "A");
+        g.addEdge("S", "B");
+        g.addEdge("A", "C");
+        g.addEdge("B", "C");
+        g.addEdge("A", "D");
+        g.addEdge("C", "E");
+        g.addEdge("D", "E");
+        return new Preset("DAG Diamond",
+                "6 nodes — convergent dependencies, multiple valid topo orderings",
+                g, "S");
     }
 }

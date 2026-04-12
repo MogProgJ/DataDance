@@ -34,6 +34,7 @@ public class AlgorithmLabController {
     private Slider speedSlider;
     private Label speedLabel;
     private Label frameLabel;
+    private GraphBuilderPanel builderPanel;
 
     // Info panel
     private Label discoveryLabel;
@@ -72,15 +73,23 @@ public class AlgorithmLabController {
         presetCombo.setPromptText("Select a graph...");
 
         List<GraphPresets.Preset> presets = GraphPresets.all();
-        presetCombo.setItems(FXCollections.observableArrayList(
-                presets.stream().map(GraphPresets.Preset::name).toList()));
+        java.util.List<String> presetNames = new java.util.ArrayList<>();
+        presetNames.add("\u2726 Custom Graph");
+        presets.forEach(p -> presetNames.add(p.name()));
+        presetCombo.setItems(FXCollections.observableArrayList(presetNames));
         presetCombo.setOnAction(e -> onPresetSelected());
 
         Label presetDesc = new Label("");
         presetDesc.getStyleClass().add("algo-preset-desc");
         presetDesc.setWrapText(true);
 
-        sectionBody(presetSection).getChildren().addAll(presetCombo, presetDesc);
+        // Custom graph builder (initially hidden)
+        builderPanel = new GraphBuilderPanel();
+        builderPanel.setVisible(false);
+        builderPanel.setManaged(false);
+        builderPanel.setOnGraphChanged(g -> onBuilderGraphChanged(g));
+
+        sectionBody(presetSection).getChildren().addAll(presetCombo, presetDesc, builderPanel);
         this.presetDescLabel = presetDesc;
 
         // Algorithm selection
@@ -88,7 +97,8 @@ public class AlgorithmLabController {
         algorithmCombo = new ComboBox<>();
         algorithmCombo.setMaxWidth(Double.MAX_VALUE);
         algorithmCombo.getStyleClass().add("algo-combo");
-        algorithmCombo.setItems(FXCollections.observableArrayList("BFS", "DFS", "Dijkstra"));
+        algorithmCombo.setItems(FXCollections.observableArrayList(
+                "BFS", "DFS", "Dijkstra", "Bellman-Ford", "Topo Sort"));
         algorithmCombo.getSelectionModel().selectFirst();
         sectionBody(algoSection).getChildren().add(algorithmCombo);
 
@@ -132,6 +142,14 @@ public class AlgorithmLabController {
                 new Separator(), sourceSection, new Separator(), targetSection,
                 new Separator(), actionSection);
 
+        ScrollPane controlScroll = new ScrollPane(controlPanel);
+        controlScroll.setFitToWidth(true);
+        controlScroll.getStyleClass().add("visual-scroll");
+        controlScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        controlScroll.setPrefWidth(276);
+        controlScroll.setMinWidth(276);
+        controlScroll.setMaxWidth(276);
+
         // ── Center workspace ────────────────────────────────
         VBox workspace = new VBox();
         workspace.getStyleClass().add("workspace");
@@ -153,7 +171,7 @@ public class AlgorithmLabController {
         // ── Right info panel ────────────────────────────────
         VBox infoPanel = buildInfoPanel();
 
-        return new HBox(controlPanel, workspace, infoPanel);
+        return new HBox(controlScroll, workspace, infoPanel);
     }
 
     // ── UI builders ─────────────────────────────────────────
@@ -266,50 +284,84 @@ public class AlgorithmLabController {
         int index = presetCombo.getSelectionModel().getSelectedIndex();
         if (index < 0) return;
 
-        currentPreset = GraphPresets.all().get(index);
-        currentGraph = currentPreset.graph();
-        presetDescLabel.setText(currentPreset.description());
+        boolean isCustom = (index == 0);
+        builderPanel.setVisible(isCustom);
+        builderPanel.setManaged(isCustom);
 
-        // Populate source nodes
-        sourceCombo.setItems(FXCollections.observableArrayList(currentGraph.nodes()));
-        if (currentGraph.hasNode(currentPreset.suggestedSource())) {
-            sourceCombo.getSelectionModel().select(currentPreset.suggestedSource());
-        } else if (!currentGraph.nodes().isEmpty()) {
-            sourceCombo.getSelectionModel().selectFirst();
-        }
-
-        // Populate target nodes
-        List<String> targetOptions = new java.util.ArrayList<>();
-        targetOptions.add("— No target —");
-        targetOptions.addAll(currentGraph.nodes());
-        targetCombo.setItems(FXCollections.observableArrayList(targetOptions));
-        if (currentPreset.suggestedTarget() != null
-                && currentGraph.hasNode(currentPreset.suggestedTarget())) {
-            targetCombo.getSelectionModel().select(currentPreset.suggestedTarget());
+        if (isCustom) {
+            currentPreset = null;
+            currentGraph = builderPanel.getGraph();
+            presetDescLabel.setText("Build your own graph — add nodes and edges below.");
+            populateNodeCombos();
+            graphPane.setGraph(currentGraph, builderPanel.isWeighted());
         } else {
-            targetCombo.getSelectionModel().selectFirst();
+            currentPreset = GraphPresets.all().get(index - 1);
+            currentGraph = currentPreset.graph();
+            presetDescLabel.setText(currentPreset.description());
+            populateNodeCombos();
+
+            if (currentGraph.hasNode(currentPreset.suggestedSource())) {
+                sourceCombo.getSelectionModel().select(currentPreset.suggestedSource());
+            }
+            if (currentPreset.suggestedTarget() != null
+                    && currentGraph.hasNode(currentPreset.suggestedTarget())) {
+                targetCombo.getSelectionModel().select(currentPreset.suggestedTarget());
+            }
+
+            // Smart algorithm auto-select
+            String name = currentPreset.name();
+            if (name.startsWith("DAG")) {
+                algorithmCombo.getSelectionModel().select("Topo Sort");
+            } else if (name.contains("Negative")) {
+                algorithmCombo.getSelectionModel().select("Bellman-Ford");
+            } else if (currentPreset.weighted()) {
+                algorithmCombo.getSelectionModel().select("Dijkstra");
+            }
+
+            graphPane.setGraph(currentGraph, currentPreset.weighted());
         }
 
-        // Auto-select Dijkstra for weighted presets
-        if (currentPreset.weighted()) {
-            algorithmCombo.getSelectionModel().select("Dijkstra");
-        }
-
-        graphPane.setGraph(currentGraph, currentPreset.weighted());
         playback.clear();
-        runBtn.setDisable(false);
+        runBtn.setDisable(currentGraph == null || currentGraph.nodeCount() == 0);
         resetBtn.setDisable(true);
         setPlaybackDisabled(true);
         clearInfoPanel();
         updateFrameLabel();
     }
 
+    private void onBuilderGraphChanged(Graph graph) {
+        this.currentGraph = graph;
+        populateNodeCombos();
+        graphPane.setGraph(graph, builderPanel.isWeighted());
+        playback.clear();
+        runBtn.setDisable(graph.nodeCount() == 0);
+        resetBtn.setDisable(true);
+        setPlaybackDisabled(true);
+        clearInfoPanel();
+        updateFrameLabel();
+    }
+
+    private void populateNodeCombos() {
+        if (currentGraph == null) return;
+        sourceCombo.setItems(FXCollections.observableArrayList(currentGraph.nodes()));
+        if (!currentGraph.nodes().isEmpty()) {
+            sourceCombo.getSelectionModel().selectFirst();
+        }
+        List<String> targetOptions = new java.util.ArrayList<>();
+        targetOptions.add("— No target —");
+        targetOptions.addAll(currentGraph.nodes());
+        targetCombo.setItems(FXCollections.observableArrayList(targetOptions));
+        targetCombo.getSelectionModel().selectFirst();
+    }
+
     private void onRun() {
         if (currentGraph == null) return;
-        String source = sourceCombo.getValue();
-        if (source == null || source.isEmpty()) return;
         String algo = algorithmCombo.getValue();
         if (algo == null) return;
+
+        String source = sourceCombo.getValue();
+        boolean needsSource = !"Topo Sort".equals(algo);
+        if (needsSource && (source == null || source.isEmpty())) return;
 
         stopAutoPlay();
 
@@ -318,18 +370,30 @@ public class AlgorithmLabController {
             frames = BfsRunner.run(currentGraph, source);
         } else if ("DFS".equals(algo)) {
             frames = DfsRunner.run(currentGraph, source);
-        } else {
-            // Dijkstra
+        } else if ("Dijkstra".equals(algo)) {
             String targetVal = targetCombo.getValue();
             String target = (targetVal == null || targetVal.startsWith("—")) ? null : targetVal;
             try {
                 frames = DijkstraRunner.run(currentGraph, source, target);
             } catch (IllegalArgumentException ex) {
-                Alert alert = new Alert(Alert.AlertType.WARNING);
-                alert.setTitle("Invalid Graph");
-                alert.setHeaderText("Cannot run Dijkstra");
-                alert.setContentText(ex.getMessage());
-                alert.showAndWait();
+                showAlgorithmError("Cannot run Dijkstra", ex.getMessage());
+                return;
+            }
+        } else if ("Bellman-Ford".equals(algo)) {
+            String targetVal = targetCombo.getValue();
+            String target = (targetVal == null || targetVal.startsWith("—")) ? null : targetVal;
+            try {
+                frames = BellmanFordRunner.run(currentGraph, source, target);
+            } catch (IllegalArgumentException ex) {
+                showAlgorithmError("Cannot run Bellman-Ford", ex.getMessage());
+                return;
+            }
+        } else {
+            // Topo Sort — no source needed
+            try {
+                frames = TopologicalSortRunner.run(currentGraph);
+            } catch (IllegalArgumentException ex) {
+                showAlgorithmError("Cannot run Topo Sort", ex.getMessage());
                 return;
             }
         }
@@ -338,6 +402,14 @@ public class AlgorithmLabController {
         resetBtn.setDisable(false);
         setPlaybackDisabled(false);
         renderCurrentFrame();
+    }
+
+    private static void showAlgorithmError(String header, String content) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Invalid Graph");
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+        alert.showAndWait();
     }
 
     private void onReset() {
@@ -440,20 +512,31 @@ public class AlgorithmLabController {
         statusMessageLabel.setText(frame.statusMessage());
 
         boolean isDijkstra = frame.algorithm() == AlgorithmFrame.AlgorithmType.DIJKSTRA;
+        boolean isBellmanFord = frame.algorithm() == AlgorithmFrame.AlgorithmType.BELLMAN_FORD;
+        boolean isTopoSort = frame.algorithm() == AlgorithmFrame.AlgorithmType.TOPOLOGICAL_SORT;
+        boolean showsDistances = isDijkstra || isBellmanFord;
 
-        if (isDijkstra) {
+        if (showsDistances || isTopoSort) {
             depthLabel.setText("—");
         } else {
             depthLabel.setText(String.valueOf(frame.depth()));
         }
 
         List<String> disc = frame.discoveryOrder();
-        discoveryLabel.setText(disc.isEmpty() ? "—" : String.join(" → ", disc));
+        if (isTopoSort) {
+            discoveryLabel.setText(disc.isEmpty() ? "—" : "Order: " + String.join(" → ", disc));
+        } else {
+            discoveryLabel.setText(disc.isEmpty() ? "—" : String.join(" → ", disc));
+        }
 
         List<String> front = frame.frontier();
         String frontierType;
         if (isDijkstra) {
             frontierType = "PQ";
+        } else if (isBellmanFord) {
+            frontierType = "Relaxed";
+        } else if (isTopoSort) {
+            frontierType = "Ready";
         } else if (frame.algorithm() == AlgorithmFrame.AlgorithmType.BFS) {
             frontierType = "Queue";
         } else {
@@ -462,12 +545,12 @@ public class AlgorithmLabController {
         frontierLabel.setText(front.isEmpty() ? "— (empty " + frontierType + ")"
                 : frontierType + ": [" + String.join(", ", front) + "]");
 
-        String visitedWord = isDijkstra ? "Settled" : "Visited";
+        String visitedWord = showsDistances ? "Settled" : isTopoSort ? "Processed" : "Visited";
         visitedLabel.setText(visitedWord + ": " + frame.visited().size() + " of "
                 + (currentGraph != null ? currentGraph.nodeCount() : "?") + " nodes");
 
-        // Dijkstra-specific: distances and shortest path
-        if (isDijkstra) {
+        // Distances and path for Dijkstra / Bellman-Ford
+        if (showsDistances) {
             java.util.Map<String, Double> dist = frame.distances();
             if (!dist.isEmpty()) {
                 StringBuilder sb = new StringBuilder();
@@ -488,6 +571,20 @@ public class AlgorithmLabController {
             } else {
                 pathLabel.setText("—");
             }
+        } else if (isTopoSort) {
+            // Show indegrees from distances map
+            java.util.Map<String, Double> inDegrees = frame.distances();
+            if (!inDegrees.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                inDegrees.forEach((node, d) -> {
+                    if (sb.length() > 0) sb.append(", ");
+                    sb.append(node).append("=").append(d.intValue());
+                });
+                distancesLabel.setText("Indegrees: " + sb);
+            } else {
+                distancesLabel.setText("—");
+            }
+            pathLabel.setText("—");
         } else {
             distancesLabel.setText("—");
             pathLabel.setText("—");

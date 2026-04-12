@@ -50,21 +50,21 @@ class GraphPresetsTest {
     }
 
     @Test
-    void fourteenPresetsExist() {
-        assertEquals(14, GraphPresets.all().size());
+    void eighteenPresetsExist() {
+        assertEquals(18, GraphPresets.all().size());
     }
 
     @Test
-    void unweightedFilterReturnsEight() {
-        assertEquals(8, GraphPresets.unweighted().size());
+    void unweightedFilterReturnsTen() {
+        assertEquals(10, GraphPresets.unweighted().size());
         for (GraphPresets.Preset p : GraphPresets.unweighted()) {
             assertFalse(p.weighted(), "Preset '" + p.name() + "' should be unweighted");
         }
     }
 
     @Test
-    void weightedFilterReturnsSix() {
-        assertEquals(6, GraphPresets.weighted().size());
+    void weightedFilterReturnsEight() {
+        assertEquals(8, GraphPresets.weighted().size());
         for (GraphPresets.Preset p : GraphPresets.weighted()) {
             assertTrue(p.weighted(), "Preset '" + p.name() + "' should be weighted");
         }
@@ -89,6 +89,8 @@ class GraphPresetsTest {
     @Test
     void dijkstraRunsOnAllPresets() {
         for (GraphPresets.Preset p : GraphPresets.all()) {
+            // Skip negative-weight presets — Dijkstra rejects those
+            if (p.name().contains("Negative")) continue;
             List<AlgorithmFrame> frames = DijkstraRunner.run(p.graph(), p.suggestedSource());
             assertFalse(frames.isEmpty(), "Dijkstra produced no frames for preset '" + p.name() + "'");
         }
@@ -97,12 +99,38 @@ class GraphPresetsTest {
     @Test
     void dijkstraRunsWithTargetOnWeightedPresets() {
         for (GraphPresets.Preset p : GraphPresets.weighted()) {
+            // Skip negative-weight presets — Dijkstra rejects those
+            if (p.name().contains("Negative")) continue;
             if (p.suggestedTarget() != null) {
                 List<AlgorithmFrame> frames = DijkstraRunner.run(
                         p.graph(), p.suggestedSource(), p.suggestedTarget());
                 assertFalse(frames.isEmpty(),
                         "Dijkstra with target produced no frames for '" + p.name() + "'");
             }
+        }
+    }
+
+    @Test
+    void bellmanFordRunsOnAllWeightedPresets() {
+        for (GraphPresets.Preset p : GraphPresets.weighted()) {
+            List<AlgorithmFrame> frames = BellmanFordRunner.run(
+                    p.graph(), p.suggestedSource());
+            assertFalse(frames.isEmpty(),
+                    "Bellman-Ford produced no frames for preset '" + p.name() + "'");
+        }
+    }
+
+    @Test
+    void topoSortRunsOnDirectedAcyclicPresets() {
+        for (GraphPresets.Preset p : GraphPresets.all()) {
+            if (!p.graph().isDirected()) continue;
+            if (p.name().contains("Cycle")) continue; // skip cyclic graphs
+            List<AlgorithmFrame> frames = TopologicalSortRunner.run(p.graph());
+            AlgorithmFrame last = frames.get(frames.size() - 1);
+            assertFalse(frames.isEmpty(),
+                    "Topo Sort produced no frames for preset '" + p.name() + "'");
+            assertTrue(last.statusMessage().contains("complete"),
+                    "Topo Sort did not complete for preset '" + p.name() + "'");
         }
     }
 }

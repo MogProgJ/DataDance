@@ -74,6 +74,38 @@ public class Graph {
         return adj != null && adj.containsKey(to);
     }
 
+    /** Removes a node and all its incident edges. Returns true if the node existed. */
+    public boolean removeNode(String label) {
+        if (!adjacency.containsKey(label)) return false;
+        adjacency.remove(label);
+        // Remove all edges pointing to this node
+        for (Map<String, Double> neighbors : adjacency.values()) {
+            neighbors.remove(label);
+        }
+        return true;
+    }
+
+    /** Removes an edge. Returns true if the edge existed. */
+    public boolean removeEdge(String from, String to) {
+        Map<String, Double> adj = adjacency.get(from);
+        if (adj == null || !adj.containsKey(to)) return false;
+        adj.remove(to);
+        if (!directed) {
+            Map<String, Double> adjRev = adjacency.get(to);
+            if (adjRev != null) adjRev.remove(from);
+        }
+        return true;
+    }
+
+    /** Creates a deep copy of this graph. */
+    public Graph copy() {
+        Graph g = new Graph(this.directed);
+        for (Map.Entry<String, Map<String, Double>> entry : adjacency.entrySet()) {
+            g.adjacency.put(entry.getKey(), new LinkedHashMap<>(entry.getValue()));
+        }
+        return g;
+    }
+
     /** Returns all edges as (from, to, weight) triples. */
     public List<Edge> edges() {
         List<Edge> result = new ArrayList<>();

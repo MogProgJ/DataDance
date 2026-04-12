@@ -249,8 +249,8 @@ public class GraphVisualPane extends VBox {
             }
 
             // Draw weight label for weighted graphs
-            if (weightedMode && edge.weight() != 1.0) {
-                drawEdgeWeight(midX + nx * 2.5, midY + ny * 2.5, edge.weight(),
+            if (weightedMode) {
+                drawEdgeWeight(midX + nx * 3.0, midY + ny * 3.0, edge.weight(),
                         isShortestPathEdge);
             }
         }
@@ -302,8 +302,11 @@ public class GraphVisualPane extends VBox {
         String targetNode = frame != null ? frame.targetNode() : null;
         Map<String, Double> distances = frame != null ? frame.distances() : Map.of();
         List<String> shortestPath = frame != null ? frame.shortestPath() : List.of();
-        boolean isDijkstra = frame != null
-                && frame.algorithm() == AlgorithmFrame.AlgorithmType.DIJKSTRA;
+        boolean showDistances = frame != null
+                && (frame.algorithm() == AlgorithmFrame.AlgorithmType.DIJKSTRA
+                    || frame.algorithm() == AlgorithmFrame.AlgorithmType.BELLMAN_FORD);
+        boolean showIndegrees = frame != null
+                && frame.algorithm() == AlgorithmFrame.AlgorithmType.TOPOLOGICAL_SORT;
 
         for (String nodeLabel : currentGraph.nodes()) {
             double[] pos = nodePositions.get(nodeLabel);
@@ -345,8 +348,8 @@ public class GraphVisualPane extends VBox {
             nodeCircle.getChildren().add(label);
             nodeGroup.getChildren().add(nodeCircle);
 
-            // Distance badge for Dijkstra
-            if (isDijkstra && distances.containsKey(nodeLabel)) {
+            // Distance badge for Dijkstra / Bellman-Ford
+            if (showDistances && distances.containsKey(nodeLabel)) {
                 double dist = distances.get(nodeLabel);
                 Label distLabel = new Label(DijkstraRunner.formatDist(dist));
                 distLabel.getStyleClass().add("graph-distance-badge");
@@ -354,6 +357,17 @@ public class GraphVisualPane extends VBox {
                     distLabel.getStyleClass().add("graph-distance-settled");
                 }
                 nodeGroup.getChildren().add(distLabel);
+            }
+
+            // Indegree badge for Topological Sort
+            if (showIndegrees && distances.containsKey(nodeLabel)) {
+                int indegree = distances.get(nodeLabel).intValue();
+                Label indLabel = new Label("in:" + indegree);
+                indLabel.getStyleClass().add("graph-distance-badge");
+                if (indegree == 0) {
+                    indLabel.getStyleClass().add("graph-indegree-zero");
+                }
+                nodeGroup.getChildren().add(indLabel);
             }
 
             nodeGroup.setLayoutX(pos[0] - NODE_RADIUS);

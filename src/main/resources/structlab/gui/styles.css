@@ -2761,3 +2761,83 @@
 .algo-workspace-content {
     -fx-background-color: #0d1117;
 }
+
+/* ── Graph builder panel ───────────────────────────────── */
+
+.graph-builder-panel {
+    -fx-background-color: #161b22;
+    -fx-border-color: #30363d;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 10;
+}
+
+.graph-builder-field {
+    -fx-background-color: #21262d;
+    -fx-text-fill: #e6edf3;
+    -fx-border-color: #30363d;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 10;
+    -fx-font-size: 12px;
+    -fx-prompt-text-fill: #6e7681;
+}
+
+.graph-builder-btn {
+    -fx-background-color: #238636;
+    -fx-text-fill: #ffffff;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 6 12;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.graph-builder-btn:hover {
+    -fx-background-color: #2ea043;
+}
+
+.graph-builder-list {
+    -fx-background-color: #21262d;
+    -fx-border-color: #30363d;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-font-size: 11px;
+}
+
+.graph-builder-list .list-cell {
+    -fx-text-fill: #e6edf3;
+    -fx-background-color: #21262d;
+    -fx-font-size: 11px;
+    -fx-font-family: "JetBrains Mono", "Cascadia Code", "Consolas", monospace;
+}
+
+.graph-builder-list .list-cell:selected {
+    -fx-background-color: #282e36;
+}
+
+.graph-builder-arrow {
+    -fx-text-fill: #8b949e;
+    -fx-font-size: 14px;
+}
+
+.graph-builder-check {
+    -fx-text-fill: #e6edf3;
+    -fx-font-size: 12px;
+}
+
+.graph-builder-check .box {
+    -fx-background-color: #21262d;
+    -fx-border-color: #30363d;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+}
+
+/* ── Indegree badge (Topo Sort) ────────────────────────── */
+
+.graph-indegree-zero {
+    -fx-text-fill: #3fb950;
+    -fx-font-weight: bold;
+}

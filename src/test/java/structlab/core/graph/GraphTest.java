@@ -135,4 +135,100 @@ class GraphTest {
         assertTrue(new Graph(true).isDirected());
         assertFalse(new Graph(false).isDirected());
     }
+
+    @Test
+    void removeNodeUndirected() {
+        Graph g = new Graph(false);
+        g.addEdge("A", "B");
+        g.addEdge("A", "C");
+        g.addEdge("B", "C");
+
+        assertTrue(g.removeNode("B"));
+        assertFalse(g.hasNode("B"));
+        assertEquals(2, g.nodeCount());
+        assertFalse(g.hasEdge("A", "B"));
+        assertFalse(g.hasEdge("B", "A"));
+        assertTrue(g.hasEdge("A", "C"));
+    }
+
+    @Test
+    void removeNodeDirected() {
+        Graph g = new Graph(true);
+        g.addEdge("A", "B");
+        g.addEdge("C", "B");
+
+        assertTrue(g.removeNode("B"));
+        assertEquals(2, g.nodeCount());
+        assertFalse(g.hasEdge("A", "B"));
+        assertFalse(g.hasEdge("C", "B"));
+    }
+
+    @Test
+    void removeNodeNonExistent() {
+        Graph g = new Graph(false);
+        g.addNode("A");
+        assertFalse(g.removeNode("Z"));
+    }
+
+    @Test
+    void removeEdgeUndirected() {
+        Graph g = new Graph(false);
+        g.addEdge("A", "B");
+        g.addEdge("A", "C");
+
+        assertTrue(g.removeEdge("A", "B"));
+        assertFalse(g.hasEdge("A", "B"));
+        assertFalse(g.hasEdge("B", "A"));
+        assertTrue(g.hasNode("A"));
+        assertTrue(g.hasNode("B"));
+        assertTrue(g.hasEdge("A", "C"));
+    }
+
+    @Test
+    void removeEdgeDirected() {
+        Graph g = new Graph(true);
+        g.addEdge("A", "B");
+        g.addEdge("B", "A");
+
+        assertTrue(g.removeEdge("A", "B"));
+        assertFalse(g.hasEdge("A", "B"));
+        assertTrue(g.hasEdge("B", "A"));
+    }
+
+    @Test
+    void removeEdgeNonExistent() {
+        Graph g = new Graph(false);
+        g.addNode("A");
+        g.addNode("B");
+        assertFalse(g.removeEdge("A", "B"));
+    }
+
+    @Test
+    void copyPreservesStructure() {
+        Graph g = new Graph(true);
+        g.addEdge("A", "B", 3.0);
+        g.addEdge("B", "C", 2.0);
+
+        Graph copy = g.copy();
+        assertEquals(g.nodeCount(), copy.nodeCount());
+        assertEquals(g.edgeCount(), copy.edgeCount());
+        assertTrue(copy.isDirected());
+        assertEquals(3.0, copy.edgeWeight("A", "B").orElse(0));
+
+        // Mutating copy doesn't affect original
+        copy.removeNode("C");
+        assertTrue(g.hasNode("C"));
+        assertEquals(3, g.nodeCount());
+    }
+
+    @Test
+    void copyUndirected() {
+        Graph g = new Graph(false);
+        g.addEdge("X", "Y", 5.0);
+
+        Graph copy = g.copy();
+        assertFalse(copy.isDirected());
+        assertTrue(copy.hasEdge("X", "Y"));
+        assertTrue(copy.hasEdge("Y", "X"));
+    }
 }
