@@ -38,11 +38,18 @@ public final class ArticulationPointsRunner {
         Set<String> articulationPoints = new LinkedHashSet<>();
         List<String> discoveryOrder = new ArrayList<>();
         int[] timer = {0};
+        int totalNodes = nodes.size();
+
+        AlgorithmTelemetry initTelemetry = TelemetryBuilder.create("Initialization")
+                .metric("Nodes", totalNodes)
+                .metric("APs Found", 0)
+                .event("Starting articulation point detection via DFS")
+                .build();
 
         frames.add(buildFrame(step++, null, visited, List.of(), discoveryOrder,
                 parentMap, treeEdges,
                 "Articulation point detection — DFS with discovery/low-link values",
-                buildDistances(disc, low), articulationPoints));
+                buildDistances(disc, low), articulationPoints, initTelemetry));
 
         for (String node : nodes) {
             if (!visited.contains(node)) {
@@ -57,9 +64,17 @@ public final class ArticulationPointsRunner {
                 : "Detection complete — " + articulationPoints.size()
                 + " articulation point" + (articulationPoints.size() != 1 ? "s" : "")
                 + ": {" + String.join(", ", articulationPoints) + "}";
+
+        AlgorithmTelemetry completeTelemetry = TelemetryBuilder.create("Complete")
+                .metric("APs Found", articulationPoints.size())
+                .metric("Visited", visited.size() + "/" + totalNodes)
+                .section("Articulation Points", List.copyOf(articulationPoints))
+                .event("Detection complete")
+                .build();
+
         frames.add(buildFrame(step, null, visited, List.of(), discoveryOrder,
                 parentMap, treeEdges, finalMsg,
-                buildDistances(disc, low), articulationPoints));
+                buildDistances(disc, low), articulationPoints, completeTelemetry));
 
         return Collections.unmodifiableList(frames);
     }
@@ -96,7 +111,13 @@ public final class ArticulationPointsRunner {
         frames.add(buildFrame(step++, start, visited, List.of(), discoveryOrder,
                 parentMap, treeEdges,
                 "Visiting " + start + " (root) — disc=" + disc.get(start),
-                buildDistances(disc, low), articulationPoints));
+                buildDistances(disc, low), articulationPoints,
+                TelemetryBuilder.create("Visit")
+                        .metric("Node", start + " (root)")
+                        .metric("disc", disc.get(start))
+                        .metric("low", low.get(start))
+                        .event("Visiting root " + start)
+                        .build()));
 
         while (!stack.isEmpty()) {
             String[] top = stack.peek();
@@ -124,7 +145,14 @@ public final class ArticulationPointsRunner {
                             discoveryOrder, parentMap, treeEdges,
                             "Visiting " + v + " — disc=" + disc.get(v)
                                     + ", low=" + low.get(v),
-                            buildDistances(disc, low), articulationPoints));
+                            buildDistances(disc, low), articulationPoints,
+                            TelemetryBuilder.create("Visit")
+                                    .metric("Node", v)
+                                    .metric("disc", disc.get(v))
+                                    .metric("low", low.get(v))
+                                    .metric("Parent", u)
+                                    .event("Visiting " + v + " from " + u)
+                                    .build()));
 
                     stack.push(new String[]{v, u, "0"});
                 } else if (!v.equals(parent)) {
@@ -137,7 +165,12 @@ public final class ArticulationPointsRunner {
                                 "Back edge " + u + "-" + v
                                         + " — updated low[" + u + "]="
                                         + low.get(u),
-                                buildDistances(disc, low), articulationPoints));
+                                buildDistances(disc, low), articulationPoints,
+                                TelemetryBuilder.create("Back-Edge")
+                                        .metric("Edge", u + "—" + v)
+                                        .metric("low[" + u + "]", low.get(u))
+                                        .event("Back edge updated low[" + u + "]")
+                                        .build()));
                     }
                 }
             } else {
@@ -158,7 +191,13 @@ public final class ArticulationPointsRunner {
                                     "Articulation point: " + parent
                                             + " (root with "
                                             + childCount.get(parent) + " DFS children)",
-                                    buildDistances(disc, low), articulationPoints));
+                                    buildDistances(disc, low), articulationPoints,
+                                    TelemetryBuilder.create("AP-Found")
+                                            .metric("Node", parent + " (root)")
+                                            .metric("DFS Children", childCount.get(parent))
+                                            .metric("Total APs", articulationPoints.size())
+                                            .event("Root AP: " + parent + " with " + childCount.get(parent) + " children")
+                                            .build()));
                         }
                     } else {
                         // Non-root is AP if low[u] >= disc[parent]
@@ -171,7 +210,14 @@ public final class ArticulationPointsRunner {
                                             + " (low[" + u + "]=" + low.get(u)
                                             + " >= disc[" + parent + "]="
                                             + disc.get(parent) + ")",
-                                    buildDistances(disc, low), articulationPoints));
+                                    buildDistances(disc, low), articulationPoints,
+                                    TelemetryBuilder.create("AP-Found")
+                                            .metric("Node", parent)
+                                            .metric("low[" + u + "]", low.get(u))
+                                            .metric("disc[" + parent + "]", disc.get(parent))
+                                            .metric("Total APs", articulationPoints.size())
+                                            .event("AP: " + parent + " (low[" + u + "] >= disc[" + parent + "])")
+                                            .build()));
                         }
                     }
 
@@ -180,7 +226,12 @@ public final class ArticulationPointsRunner {
                                 List.of(u), discoveryOrder, parentMap, treeEdges,
                                 "Backtrack — updated low[" + parent + "]="
                                         + low.get(parent),
-                                buildDistances(disc, low), articulationPoints));
+                                buildDistances(disc, low), articulationPoints,
+                                TelemetryBuilder.create("Backtrack")
+                                        .metric("Node", parent)
+                                        .metric("low[" + parent + "]", low.get(parent))
+                                        .event("Backtrack updated low[" + parent + "]")
+                                        .build()));
                     }
                 }
             }
@@ -207,14 +258,14 @@ public final class ArticulationPointsRunner {
             Map<String, String> parentMap,
             Set<AlgorithmFrame.TraversalEdge> treeEdges,
             String statusMessage, Map<String, Double> distances,
-            Set<String> articulationPoints) {
-        // Store articulation points in shortestPath field
+            Set<String> articulationPoints,
+            AlgorithmTelemetry telemetry) {
         return new AlgorithmFrame(
                 AlgorithmFrame.AlgorithmType.ARTICULATION_POINTS, stepIndex,
                 currentNode, Set.copyOf(visited), List.copyOf(frontier),
                 List.copyOf(discoveryOrder),
                 Map.copyOf(parentMap), Set.copyOf(treeEdges),
                 statusMessage, 0,
-                Map.copyOf(distances), null, List.copyOf(articulationPoints), null);
+                Map.copyOf(distances), null, List.copyOf(articulationPoints), telemetry);
     }
 }

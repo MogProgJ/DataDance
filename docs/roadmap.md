@@ -122,6 +122,28 @@ JavaFxToolkitExtension with bounded startup timeout.
   generic frame data. Tracker visibility bound to AppSettings.
 - Test coverage: 1000 tests, 0 failures.
 
+### Phase 5C — Algorithm Mechanics Upgrade
+- **Real Per-Step Telemetry**: All 11 graph algorithm runners now emit
+  meaningful AlgorithmTelemetry on every frame via TelemetryBuilder —
+  phase labels (Initialization, Extract-Min, Relax, Complete, etc.),
+  typed metrics (distances, weights, component counts), titled sections
+  (frontier contents, MST edges), and descriptive events.
+- **Tracker Pane Upgrade**: AlgorithmTrackerPane supports configurable
+  default expansion state via constructor parameter, wired to AppSettings.
+- **Settings Wiring**: Playback speed slider initialised from
+  AppSettings.defaultPlaybackSpeed; auto-fit-graph triggers after preset
+  selection, builder changes, and scenario loads; tracker expansion
+  respects settings.
+- **Learn Page Deepening**: Implementation descriptions shown on Learn
+  cards, "Comparable" badge for structures with 2+ implementations,
+  complexity matrix header changed to "Time Complexity".
+- **Controller Cleanup**: Extracted `resetPlaybackControls()` helper,
+  eliminating duplicated 7-line playback reset blocks across 4 methods
+  in AlgorithmLabController.
+- **Test Coverage**: TelemetryBuilderTest (10 tests), RunnerTelemetryTest
+  (13 tests verifying all 11 runners emit non-null telemetry with correct
+  Init/Complete phases).
+
 ---
 
 ## Current state
@@ -137,8 +159,11 @@ JavaFxToolkitExtension with bounded startup timeout.
   Algorithm Lab preferences, and Restore Defaults
 - Activity page with category filter, clear, and export
 - Compare and Activity export (JSON + text) via FileChooser
-- Algorithm Lab tracker pane with structured telemetry display
-- 1000 tests, 0 failures
+- Algorithm Lab tracker pane with structured per-step telemetry display
+  (phase, metrics, sections, events) for all 11 runners
+- Learn cards with implementation descriptions, compare badges, and
+  improved complexity matrix headers
+- 1000+ tests, 0 failures
 - Clean CI with Xvfb and coverage reporting
 - Structured visual state architecture (VisualState sealed hierarchy)
 - Reusable visual primitives (UiComponents, VisualStateHost)

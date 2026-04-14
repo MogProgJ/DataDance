@@ -83,7 +83,9 @@ Data structure reference library with search and filtering.
   categories, keywords, descriptions, behavior, and learning notes
 - **Category filter**: ComboBox to narrow by structure category
 - **Cards**: Each card shows name, category, keywords, description,
-  behavior description, and learning notes sourced from the registry
+  behavior description, learning notes, implementation descriptions,
+  and a complexity matrix table sourced from the registry
+- "Comparable" badge shown for structures with 2+ implementations
 - Grouped by category when unfiltered
 
 ### Activity
@@ -119,7 +121,12 @@ Interactive graph algorithm simulation workspace.
   Topo Sort, A*, Prim (MST), Kruskal (MST), SCC (Kosaraju), Bridges,
   Articulation Points — driven by a typed metadata catalog.
 - **Playback controls**: Step forward, step back, play/pause, speed
-  slider, reset.
+  slider (initialised from settings), reset.
+- **Telemetry tracker**: Left-panel AlgorithmTrackerPane showing per-step
+  phase, metrics, titled sections, and events for the current frame.
+  Expansion state configurable via settings.
+- **Auto-fit**: Graph automatically fits viewport on preset/builder/
+  scenario changes when `autoFitGraph` setting is enabled.
 - **Graph presets**: Built-in sample graphs (small, medium, tree, etc.).
 - **Configuration**: Node count, source node, graph preset selection.
 

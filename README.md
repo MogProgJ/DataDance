@@ -73,7 +73,8 @@ a swamp.
 >   Heap (2), Array (2), Linked List (2), Hash Table (5)
 > - Algorithm Lab: 11 graph algorithms (BFS, DFS, Dijkstra, Bellman-Ford,
 >   Topo Sort, A*, Prim, Kruskal, SCC, Bridges, Articulation Points)
->   with typed metadata catalog, compare mode, and scenario save/load
+>   with typed metadata catalog, per-step telemetry, tracker pane,
+>   compare mode, and scenario save/load
 > - Service facade: clean API consumed by the GUI and terminal, tested
 >   independently
 > - Backend tests: 930+ automated tests covering core, trace, render,

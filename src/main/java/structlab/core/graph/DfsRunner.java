@@ -31,28 +31,38 @@ public final class DfsRunner {
         Set<AlgorithmFrame.TraversalEdge> treeEdges = new LinkedHashSet<>();
         Map<String, Integer> depthMap = new LinkedHashMap<>();
         int step = 0;
+        int totalNodes = graph.nodeCount();
 
         // Initial frame: source pushed
         stack.push(source);
         depthMap.put(source, 0);
 
-        frames.add(AlgorithmFrame.traversal(
-                AlgorithmFrame.AlgorithmType.DFS, step++, null,
-                Set.copyOf(visited), stackToList(stack), List.copyOf(discoveryOrder),
-                Map.copyOf(parentMap), Set.copyOf(treeEdges),
-                "DFS started — pushed source " + source, 0));
+        AlgorithmTelemetry initTelemetry = TelemetryBuilder.create("Initialization")
+                .metric("Visited", "0/" + totalNodes)
+                .metric("Depth", 0)
+                .section("Stack", stackToList(stack))
+                .event("Pushed source " + source)
+                .build();
+
+        frames.add(frame(step++, null, visited, stack, discoveryOrder,
+                parentMap, treeEdges, "DFS started — pushed source " + source,
+                0, initTelemetry));
 
         while (!stack.isEmpty()) {
             String current = stack.pop();
 
             if (visited.contains(current)) {
-                // Already visited via another path — skip (backtrack frame)
-                frames.add(AlgorithmFrame.traversal(
-                        AlgorithmFrame.AlgorithmType.DFS, step++, current,
-                        Set.copyOf(visited), stackToList(stack), List.copyOf(discoveryOrder),
-                        Map.copyOf(parentMap), Set.copyOf(treeEdges),
+                AlgorithmTelemetry btTelemetry = TelemetryBuilder.create("Backtrack")
+                        .metric("Popped", current + " (already visited)")
+                        .metric("Visited", visited.size() + "/" + totalNodes)
+                        .section("Stack", stackToList(stack))
+                        .event("Backtrack — " + current + " already visited")
+                        .build();
+
+                frames.add(frame(step++, current, visited, stack, discoveryOrder,
+                        parentMap, treeEdges,
                         "Popped " + current + " — already visited, backtracking",
-                        depthMap.getOrDefault(current, 0)));
+                        depthMap.getOrDefault(current, 0), btTelemetry));
                 continue;
             }
 
@@ -60,12 +70,18 @@ public final class DfsRunner {
             discoveryOrder.add(current);
             int depth = depthMap.getOrDefault(current, 0);
 
-            // Frame: visiting current node
-            frames.add(AlgorithmFrame.traversal(
-                    AlgorithmFrame.AlgorithmType.DFS, step++, current,
-                    Set.copyOf(visited), stackToList(stack), List.copyOf(discoveryOrder),
-                    Map.copyOf(parentMap), Set.copyOf(treeEdges),
-                    "Visiting " + current + " (depth " + depth + ")", depth));
+            AlgorithmTelemetry visitTelemetry = TelemetryBuilder.create("Visit")
+                    .metric("Current", current)
+                    .metric("Depth", depth)
+                    .metric("Visited", visited.size() + "/" + totalNodes)
+                    .section("Stack", stackToList(stack))
+                    .event("Visiting " + current + " (depth " + depth + ")")
+                    .build();
+
+            frames.add(frame(step++, current, visited, stack, discoveryOrder,
+                    parentMap, treeEdges,
+                    "Visiting " + current + " (depth " + depth + ")", depth,
+                    visitTelemetry));
 
             // Push neighbors in reverse order so first neighbor is processed first
             List<String> neighbors = graph.neighbors(current);
@@ -82,7 +98,6 @@ public final class DfsRunner {
                 if (!depthMap.containsKey(neighbor)) {
                     depthMap.put(neighbor, depth + 1);
                 }
-                // Only record tree edge for first discovery
                 if (!parentMap.containsKey(neighbor) && !neighbor.equals(source)) {
                     parentMap.put(neighbor, current);
                     treeEdges.add(new AlgorithmFrame.TraversalEdge(current, neighbor));
@@ -90,22 +105,39 @@ public final class DfsRunner {
             }
 
             if (!unvisited.isEmpty()) {
-                frames.add(AlgorithmFrame.traversal(
-                        AlgorithmFrame.AlgorithmType.DFS, step++, current,
-                        Set.copyOf(visited), stackToList(stack), List.copyOf(discoveryOrder),
-                        Map.copyOf(parentMap), Set.copyOf(treeEdges),
+                // Reverse back for display in push order
+                List<String> pushed = new ArrayList<>(unvisited);
+                Collections.reverse(pushed);
+
+                AlgorithmTelemetry pushTelemetry = TelemetryBuilder.create("Push")
+                        .metric("From", current)
+                        .metric("Pushed", pushed.size() + " neighbor(s)")
+                        .metric("Visited", visited.size() + "/" + totalNodes)
+                        .section("Stack", stackToList(stack))
+                        .section("Pushed Neighbors", pushed)
+                        .event("Pushed " + pushed.size() + " unvisited neighbor(s) of " + current)
+                        .build();
+
+                frames.add(frame(step++, current, visited, stack, discoveryOrder,
+                        parentMap, treeEdges,
                         "Pushed " + unvisited.size() + " unvisited neighbor(s) of " + current,
-                        depth));
+                        depth, pushTelemetry));
             }
         }
 
         // Final frame
-        frames.add(AlgorithmFrame.traversal(
-                AlgorithmFrame.AlgorithmType.DFS, step, null,
-                Set.copyOf(visited), List.of(), List.copyOf(discoveryOrder),
-                Map.copyOf(parentMap), Set.copyOf(treeEdges),
-                "DFS complete — visited " + visited.size() + " of " + graph.nodeCount() + " nodes",
-                depthMap.values().stream().mapToInt(Integer::intValue).max().orElse(0)));
+        int maxDepth = depthMap.values().stream().mapToInt(Integer::intValue).max().orElse(0);
+        AlgorithmTelemetry completeTelemetry = TelemetryBuilder.create("Complete")
+                .metric("Visited", visited.size() + "/" + totalNodes)
+                .metric("Max Depth", maxDepth)
+                .section("Discovery Order", List.copyOf(discoveryOrder))
+                .event("DFS complete")
+                .build();
+
+        frames.add(frame(step, null, visited, stack, discoveryOrder,
+                parentMap, treeEdges,
+                "DFS complete — visited " + visited.size() + " of " + totalNodes + " nodes",
+                maxDepth, completeTelemetry));
 
         return Collections.unmodifiableList(frames);
     }
@@ -113,5 +145,16 @@ public final class DfsRunner {
     /** Converts stack (Deque) to a list preserving stack order (top first). */
     private static List<String> stackToList(Deque<String> stack) {
         return List.copyOf(stack);
+    }
+
+    private static AlgorithmFrame frame(
+            int stepIndex, String currentNode,
+            Set<String> visited, Deque<String> stack, List<String> discoveryOrder,
+            Map<String, String> parentMap, Set<AlgorithmFrame.TraversalEdge> treeEdges,
+            String statusMessage, int depth, AlgorithmTelemetry telemetry) {
+        return new AlgorithmFrame(AlgorithmFrame.AlgorithmType.DFS, stepIndex, currentNode,
+                Set.copyOf(visited), stackToList(stack), List.copyOf(discoveryOrder),
+                Map.copyOf(parentMap), Set.copyOf(treeEdges), statusMessage, depth,
+                Map.of(), null, List.of(), telemetry);
     }
 }

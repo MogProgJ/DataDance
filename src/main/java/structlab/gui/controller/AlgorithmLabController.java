@@ -216,7 +216,7 @@ public class AlgorithmLabController {
         sectionBody(scenarioSection).getChildren().addAll(saveBtn, loadBtn);
 
         // Tracker pane (visibility bound to settings)
-        trackerPane = new AlgorithmTrackerPane();
+        trackerPane = new AlgorithmTrackerPane(settings.isTrackerExpanded());
         trackerPane.visibleProperty().bind(settings.showAlgorithmTrackerProperty());
         trackerPane.managedProperty().bind(settings.showAlgorithmTrackerProperty());
 
@@ -328,7 +328,7 @@ public class AlgorithmLabController {
         Region spacerR = new Region();
         HBox.setHgrow(spacerR, Priority.ALWAYS);
 
-        speedSlider = new Slider(0.25, 3.0, 1.0);
+        speedSlider = new Slider(0.25, 3.0, settings.getDefaultPlaybackSpeed());
         speedSlider.getStyleClass().add("algo-speed-slider");
         speedSlider.setPrefWidth(100);
         speedSlider.setMajorTickUnit(0.5);
@@ -339,7 +339,7 @@ public class AlgorithmLabController {
             }
         });
 
-        speedLabel = new Label("1.0x");
+        speedLabel = new Label(String.format("%.1fx", settings.getDefaultPlaybackSpeed()));
         speedLabel.getStyleClass().add("algo-speed-label");
 
         bar.getChildren().addAll(
@@ -439,15 +439,10 @@ public class AlgorithmLabController {
             }
 
             graphPane.setGraph(currentGraph, currentPreset.weighted());
+            if (settings.isAutoFitGraph()) graphPane.fitToView();
         }
 
-        syncCompareGraph();
-        playback.clear();
-        runBtn.setDisable(currentGraph == null || currentGraph.nodeCount() == 0);
-        resetBtn.setDisable(true);
-        setPlaybackDisabled(true);
-        clearInfoPanel();
-        updateFrameLabel();
+        resetPlaybackControls(currentGraph == null || currentGraph.nodeCount() == 0);
         onAlgorithmSelected();
     }
 
@@ -455,13 +450,8 @@ public class AlgorithmLabController {
         this.currentGraph = graph;
         populateNodeCombos();
         graphPane.setGraph(graph, builderPanel.isWeighted());
-        syncCompareGraph();
-        playback.clear();
-        runBtn.setDisable(graph.nodeCount() == 0);
-        resetBtn.setDisable(true);
-        setPlaybackDisabled(true);
-        clearInfoPanel();
-        updateFrameLabel();
+        if (settings.isAutoFitGraph()) graphPane.fitToView();
+        resetPlaybackControls(graph.nodeCount() == 0);
     }
 
     /** Updates control visibility and hint text based on the selected algorithm spec. */
@@ -730,13 +720,7 @@ public class AlgorithmLabController {
         if (presetIndex == 0 && builderPanel.isVisible()) {
             builderPanel.loadGraph(graph, graph.isDirected());
         }
-        syncCompareGraph();
-        playback.clear();
-        runBtn.setDisable(graph.nodeCount() == 0);
-        resetBtn.setDisable(true);
-        setPlaybackDisabled(true);
-        clearInfoPanel();
-        updateFrameLabel();
+        resetPlaybackControls(graph.nodeCount() == 0);
     }
 
     // ── Auto-play ───────────────────────────────────────────
@@ -1053,6 +1037,7 @@ public class AlgorithmLabController {
             graphPane.setNodePositions(scenario.nodePositions());
             graphPane.renderIdle();
         }
+        if (settings.isAutoFitGraph()) graphPane.fitToView();
 
         if (scenario.algorithm() != null) {
             algorithmCombo.getSelectionModel().select(scenario.algorithm());
@@ -1064,17 +1049,22 @@ public class AlgorithmLabController {
             targetCombo.getSelectionModel().select(scenario.target());
         }
 
-        syncCompareGraph();
-        playback.clear();
-        runBtn.setDisable(currentGraph.nodeCount() == 0);
-        resetBtn.setDisable(true);
-        setPlaybackDisabled(true);
-        clearInfoPanel();
-        updateFrameLabel();
+        resetPlaybackControls(currentGraph.nodeCount() == 0);
         onAlgorithmSelected();
     }
 
     // ── Helpers ──────────────────────────────────────────────
+
+    /** Resets playback state after a graph change. */
+    private void resetPlaybackControls(boolean disableRun) {
+        syncCompareGraph();
+        playback.clear();
+        runBtn.setDisable(disableRun);
+        resetBtn.setDisable(true);
+        setPlaybackDisabled(true);
+        clearInfoPanel();
+        updateFrameLabel();
+    }
 
     private VBox buildSection(String title) {
         VBox section = new VBox(4);

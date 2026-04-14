@@ -283,6 +283,21 @@
     -fx-font-weight: bold;
 }
 
+.learn-impl-desc {
+    -fx-text-fill: #8b949e;
+    -fx-font-size: 11px;
+    -fx-padding: 0 0 2 8;
+}
+
+.learn-compare-badge {
+    -fx-text-fill: #58a6ff;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-border-color: #58a6ff;
+    -fx-border-radius: 4;
+    -fx-padding: 1 6;
+}
+
 .learn-complexity-detail {
     -fx-text-fill: #6e7681;
     -fx-font-size: 11px;

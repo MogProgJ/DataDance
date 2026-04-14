@@ -1013,11 +1013,18 @@ public class MainWindowController {
         card.setMinWidth(300);
         card.setPadding(new Insets(18));
 
+        HBox titleRow = new HBox(8);
+        titleRow.setAlignment(Pos.CENTER_LEFT);
         Label name = styledLabel(s.name(), "learn-card-title");
+        titleRow.getChildren().add(name);
+        if (service.isComparable(s.id())) {
+            Label badge = styledLabel("Comparable", "learn-compare-badge");
+            titleRow.getChildren().add(badge);
+        }
         Label desc = styledLabel(s.description() != null ? s.description() : "", "learn-card-desc");
         desc.setWrapText(true);
 
-        card.getChildren().addAll(name, desc);
+        card.getChildren().addAll(titleRow, desc);
 
         // Behavior section
         if (s.behavior() != null && !s.behavior().isBlank()) {
@@ -1044,12 +1051,17 @@ public class MainWindowController {
             card.getChildren().add(buildComplexityTable(matrix));
         }
 
-        // Implementations list (name + space)
+        // Implementations list (name + description + space)
         if (!impls.isEmpty()) {
-            VBox implBox = new VBox(4);
+            VBox implBox = new VBox(6);
             for (ImplementationSummary impl : impls) {
                 Label implName = styledLabel(impl.name(), "learn-impl-name");
                 implBox.getChildren().add(implName);
+                if (impl.description() != null && !impl.description().isBlank()) {
+                    Label implDesc = styledLabel(impl.description(), "learn-impl-desc");
+                    implDesc.setWrapText(true);
+                    implBox.getChildren().add(implDesc);
+                }
                 if (impl.spaceComplexity() != null && !impl.spaceComplexity().isEmpty()) {
                     Label space = styledLabel("Space: " + impl.spaceComplexity(),
                             "learn-complexity-detail");
@@ -1108,8 +1120,8 @@ public class MainWindowController {
 
         List<String> implNames = matrix.implementationNames();
 
-        // Header row: "Operation" | impl1 | impl2 | ...
-        grid.add(styledLabel("Operation", "complexity-header"), 0, 0);
+        // Header row: "Time Complexity" | impl1 | impl2 | ...
+        grid.add(styledLabel("Time Complexity", "complexity-header"), 0, 0);
         for (int col = 0; col < implNames.size(); col++) {
             grid.add(styledLabel(implNames.get(col), "complexity-header"), col + 1, 0);
         }

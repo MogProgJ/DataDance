@@ -29,11 +29,18 @@ public final class SCCRunner {
         List<AlgorithmFrame> frames = new ArrayList<>();
         List<String> nodes = graph.nodes();
         int step = 0;
+        int totalNodes = nodes.size();
+
+        AlgorithmTelemetry initTelemetry = TelemetryBuilder.create("Initialization")
+                .metric("Nodes", totalNodes)
+                .metric("Phase", "Pass 1 — DFS on original graph")
+                .event("Starting Kosaraju Pass 1")
+                .build();
 
         frames.add(buildFrame(step++, null, Set.of(), List.of(), List.of(),
                 Map.of(), Set.of(),
                 "Kosaraju SCC — Pass 1: DFS on original graph to get finish order",
-                Map.of()));
+                Map.of(), initTelemetry));
 
         // ── Pass 1: DFS on original graph, record finish order ──
         Set<String> visited = new LinkedHashSet<>();
@@ -46,18 +53,30 @@ public final class SCCRunner {
         }
 
         List<String> finishOrder = new ArrayList<>(finishStack);
+
+        AlgorithmTelemetry p1DoneTelemetry = TelemetryBuilder.create("Pass1-Complete")
+                .metric("Visited", visited.size() + "/" + totalNodes)
+                .section("Finish Order", finishOrder)
+                .event("Pass 1 complete")
+                .build();
+
         frames.add(buildFrame(step++, null, visited, List.of(), finishOrder,
                 Map.of(), Set.of(),
                 "Pass 1 complete — finish order: " + String.join(", ", finishOrder),
-                Map.of()));
+                Map.of(), p1DoneTelemetry));
 
         // ── Build transposed graph ──
         Graph transposed = transpose(graph);
 
+        AlgorithmTelemetry p2StartTelemetry = TelemetryBuilder.create("Pass2-Start")
+                .metric("Phase", "Pass 2 — DFS on transposed graph")
+                .event("Starting Kosaraju Pass 2")
+                .build();
+
         frames.add(buildFrame(step++, null, Set.of(), List.of(), finishOrder,
                 Map.of(), Set.of(),
                 "Pass 2: DFS on transposed graph in reverse finish order",
-                Map.of()));
+                Map.of(), p2StartTelemetry));
 
         // ── Pass 2: DFS on transposed graph in reverse finish order ──
         Set<String> visited2 = new LinkedHashSet<>();
@@ -75,32 +94,44 @@ public final class SCCRunner {
             step = dfsPass2(transposed, root, visited2, component,
                     treeEdges, frames, step, componentId, componentMap, discoveryOrder);
 
-            // Record component assignment as distances (component ID)
             Map<String, Double> compDist = new LinkedHashMap<>();
             for (Map.Entry<String, String> entry : componentMap.entrySet()) {
                 compDist.put(entry.getKey(),
                         Double.parseDouble(entry.getValue()));
             }
 
+            AlgorithmTelemetry sccTelemetry = TelemetryBuilder.create("SCC-Found")
+                    .metric("SCC #", componentId)
+                    .metric("Size", component.size())
+                    .metric("Total SCCs", componentId)
+                    .section("Component", component)
+                    .event("SCC #" + componentId + " found: {" + String.join(", ", component) + "}")
+                    .build();
+
             frames.add(buildFrame(step++, null, visited2, List.of(),
                     discoveryOrder, componentMap, treeEdges,
                     "SCC #" + componentId + " found: {"
                             + String.join(", ", component) + "}",
-                    compDist));
+                    compDist, sccTelemetry));
         }
 
-        // Final
         Map<String, Double> finalDist = new LinkedHashMap<>();
         for (Map.Entry<String, String> entry : componentMap.entrySet()) {
             finalDist.put(entry.getKey(), Double.parseDouble(entry.getValue()));
         }
 
+        AlgorithmTelemetry completeTelemetry = TelemetryBuilder.create("Complete")
+                .metric("Total SCCs", componentId)
+                .metric("Nodes", totalNodes)
+                .event("Kosaraju complete")
+                .build();
+
         frames.add(buildFrame(step, null, visited2, List.of(),
                 discoveryOrder, componentMap, treeEdges,
                 "Kosaraju complete — " + componentId + " SCC"
                         + (componentId != 1 ? "s" : "") + " found in "
-                        + graph.nodeCount() + " nodes",
-                finalDist));
+                        + totalNodes + " nodes",
+                finalDist, completeTelemetry));
 
         return Collections.unmodifiableList(frames);
     }
@@ -127,7 +158,10 @@ public final class SCCRunner {
                         stackLabels(stack), List.of(),
                         Map.of(), Set.of(),
                         "Pass 1 — visiting " + current,
-                        Map.of()));
+                        Map.of(), TelemetryBuilder.create("Pass1-Visit")
+                                .metric("Node", current)
+                                .event("Visiting " + current + " (Pass 1)")
+                                .build()));
 
                 stack.push(new String[]{current, "exit"});
                 List<String> neighbors = graph.neighbors(current);
@@ -171,7 +205,11 @@ public final class SCCRunner {
                     stackToList(stack), discoveryOrder,
                     componentMap, treeEdges,
                     "Pass 2 — " + current + " → SCC #" + componentId,
-                    compDist));
+                    compDist, TelemetryBuilder.create("Pass2-Visit")
+                            .metric("Node", current)
+                            .metric("SCC #", componentId)
+                            .event(current + " assigned to SCC #" + componentId)
+                            .build()));
 
             List<String> neighbors = transposed.neighbors(current);
             for (int i = neighbors.size() - 1; i >= 0; i--) {
@@ -217,14 +255,14 @@ public final class SCCRunner {
             List<String> frontier, List<String> discoveryOrder,
             Map<String, String> componentMap,
             Set<AlgorithmFrame.TraversalEdge> treeEdges,
-            String statusMessage, Map<String, Double> distances) {
-        // componentMap stored as parentMap (reusing the field for component assignment)
+            String statusMessage, Map<String, Double> distances,
+            AlgorithmTelemetry telemetry) {
         return new AlgorithmFrame(
                 AlgorithmFrame.AlgorithmType.SCC, stepIndex, currentNode,
                 Set.copyOf(visited), List.copyOf(frontier),
                 List.copyOf(discoveryOrder),
                 Map.copyOf(componentMap), Set.copyOf(treeEdges),
                 statusMessage, 0,
-                Map.copyOf(distances), null, List.of(), null);
+                Map.copyOf(distances), null, List.of(), telemetry);
     }
 }

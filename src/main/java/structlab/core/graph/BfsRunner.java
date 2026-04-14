@@ -30,20 +30,25 @@ public final class BfsRunner {
         Set<AlgorithmFrame.TraversalEdge> treeEdges = new LinkedHashSet<>();
         int step = 0;
         int depth = 0;
+        int totalNodes = graph.nodeCount();
 
         // Initial frame: source enqueued
         queue.add(source);
         visited.add(source);
         discoveryOrder.add(source);
 
-        frames.add(AlgorithmFrame.traversal(
-                AlgorithmFrame.AlgorithmType.BFS, step++, null,
-                Set.copyOf(visited), List.copyOf(queue), List.copyOf(discoveryOrder),
-                Map.copyOf(parentMap), Set.copyOf(treeEdges),
-                "BFS started — enqueued source " + source, depth));
+        AlgorithmTelemetry initTelemetry = TelemetryBuilder.create("Initialization")
+                .metric("Visited", "1/" + totalNodes)
+                .metric("Layer", 0)
+                .section("Queue", List.copyOf(queue))
+                .event("Enqueued source " + source)
+                .build();
+
+        frames.add(frame(step++, null, visited, queue, discoveryOrder,
+                parentMap, treeEdges,
+                "BFS started — enqueued source " + source, depth, initTelemetry));
 
         // Track layer boundaries for depth calculation
-        // We track by storing the node that ends the current layer
         Map<String, Integer> depthMap = new LinkedHashMap<>();
         depthMap.put(source, 0);
 
@@ -51,14 +56,20 @@ public final class BfsRunner {
             String current = queue.poll();
             depth = depthMap.getOrDefault(current, 0);
 
-            // Frame: processing current node
-            frames.add(AlgorithmFrame.traversal(
-                    AlgorithmFrame.AlgorithmType.BFS, step++, current,
-                    Set.copyOf(visited), List.copyOf(queue), List.copyOf(discoveryOrder),
-                    Map.copyOf(parentMap), Set.copyOf(treeEdges),
-                    "Dequeued " + current + " — exploring neighbors (layer " + depth + ")",
-                    depth));
+            AlgorithmTelemetry dequeueTelemetry = TelemetryBuilder.create("Dequeue")
+                    .metric("Current", current)
+                    .metric("Layer", depth)
+                    .metric("Visited", visited.size() + "/" + totalNodes)
+                    .section("Queue", List.copyOf(queue))
+                    .event("Dequeued " + current + " (layer " + depth + ")")
+                    .build();
 
+            frames.add(frame(step++, current, visited, queue, discoveryOrder,
+                    parentMap, treeEdges,
+                    "Dequeued " + current + " — exploring neighbors (layer " + depth + ")",
+                    depth, dequeueTelemetry));
+
+            List<String> newlyEnqueued = new ArrayList<>();
             for (String neighbor : graph.neighbors(current)) {
                 if (!visited.contains(neighbor)) {
                     visited.add(neighbor);
@@ -67,26 +78,59 @@ public final class BfsRunner {
                     parentMap.put(neighbor, current);
                     treeEdges.add(new AlgorithmFrame.TraversalEdge(current, neighbor));
                     depthMap.put(neighbor, depth + 1);
+                    newlyEnqueued.add(neighbor);
 
-                    // Frame: discovered new neighbor
-                    frames.add(AlgorithmFrame.traversal(
-                            AlgorithmFrame.AlgorithmType.BFS, step++, current,
-                            Set.copyOf(visited), List.copyOf(queue), List.copyOf(discoveryOrder),
-                            Map.copyOf(parentMap), Set.copyOf(treeEdges),
+                    AlgorithmTelemetry discoverTelemetry = TelemetryBuilder.create("Discover")
+                            .metric("Current", current)
+                            .metric("Discovered", neighbor)
+                            .metric("Layer", depth)
+                            .metric("Visited", visited.size() + "/" + totalNodes)
+                            .section("Queue", List.copyOf(queue))
+                            .section("Newly Enqueued", List.copyOf(newlyEnqueued))
+                            .event("Discovered " + neighbor + " via " + current)
+                            .build();
+
+                    frames.add(frame(step++, current, visited, queue, discoveryOrder,
+                            parentMap, treeEdges,
                             "Discovered " + neighbor + " via " + current + " → enqueued",
-                            depth));
+                            depth, discoverTelemetry));
                 }
             }
         }
 
         // Final frame
-        frames.add(AlgorithmFrame.traversal(
-                AlgorithmFrame.AlgorithmType.BFS, step, null,
-                Set.copyOf(visited), List.of(), List.copyOf(discoveryOrder),
-                Map.copyOf(parentMap), Set.copyOf(treeEdges),
-                "BFS complete — visited " + visited.size() + " of " + graph.nodeCount() + " nodes",
-                depth));
+        AlgorithmTelemetry completeTelemetry = TelemetryBuilder.create("Complete")
+                .metric("Visited", visited.size() + "/" + totalNodes)
+                .metric("Max Layer", depthMap.values().stream().mapToInt(Integer::intValue).max().orElse(0))
+                .section("Discovery Order", List.copyOf(discoveryOrder))
+                .event("BFS complete")
+                .build();
+
+        frames.add(frame(step, null, visited, queue, discoveryOrder,
+                parentMap, treeEdges,
+                "BFS complete — visited " + visited.size() + " of " + totalNodes + " nodes",
+                depth, completeTelemetry));
 
         return Collections.unmodifiableList(frames);
+    }
+
+    private static AlgorithmFrame frame(
+            AlgorithmFrame.AlgorithmType ignored, int stepIndex, String currentNode,
+            Set<String> visited, List<String> frontier, List<String> discoveryOrder,
+            Map<String, String> parentMap, Set<AlgorithmFrame.TraversalEdge> treeEdges,
+            String statusMessage, int depth) {
+        return frame(stepIndex, currentNode, visited, new ArrayDeque<>(), discoveryOrder,
+                parentMap, treeEdges, statusMessage, depth, null);
+    }
+
+    private static AlgorithmFrame frame(
+            int stepIndex, String currentNode,
+            Set<String> visited, Deque<String> queue, List<String> discoveryOrder,
+            Map<String, String> parentMap, Set<AlgorithmFrame.TraversalEdge> treeEdges,
+            String statusMessage, int depth, AlgorithmTelemetry telemetry) {
+        return new AlgorithmFrame(AlgorithmFrame.AlgorithmType.BFS, stepIndex, currentNode,
+                Set.copyOf(visited), List.copyOf(queue), List.copyOf(discoveryOrder),
+                Map.copyOf(parentMap), Set.copyOf(treeEdges), statusMessage, depth,
+                Map.of(), null, List.of(), telemetry);
     }
 }

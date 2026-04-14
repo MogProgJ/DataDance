@@ -52,10 +52,20 @@ public final class BellmanFordRunner {
         settleOrder.add(source);
 
         int step = 0;
+        int totalNodes = nodes.size();
+
+        AlgorithmTelemetry initTelemetry = TelemetryBuilder.create("Initialization")
+                .metric("Source", source)
+                .metric("Nodes", totalNodes)
+                .metric("Edges", allEdges.size())
+                .metric("Passes Required", totalNodes - 1)
+                .event("Source " + source + " initialized with distance 0")
+                .build();
+
         frames.add(buildFrame(step++, null, settled, List.of(), settleOrder,
                 parentMap, treeEdges,
                 "Bellman-Ford started — source " + source + " with distance 0",
-                dist, target));
+                dist, target, List.of(), initTelemetry));
 
         // V-1 relaxation passes
         for (int pass = 1; pass < V; pass++) {
@@ -72,7 +82,6 @@ public final class BellmanFordRunner {
                     anyUpdate = true;
                     dist.put(edge.to(), newDist);
 
-                    // Update parent and tree edges
                     String oldParent = parentMap.get(edge.to());
                     if (oldParent != null) {
                         treeEdges.removeIf(e -> e.to().equals(edge.to()));
@@ -95,17 +104,34 @@ public final class BellmanFordRunner {
                                 + " → " + formatDist(newDist);
                     }
 
+                    AlgorithmTelemetry relaxTelemetry = TelemetryBuilder.create("Relax")
+                            .metric("Pass", pass + "/" + (V - 1))
+                            .metric("Edge", edge.from() + "→" + edge.to())
+                            .metric("Old Distance", formatDist(oldDist))
+                            .metric("New Distance", formatDist(newDist))
+                            .metric("Edge Weight", formatDist(edge.weight()))
+                            .metric("Settled", settled.size() + "/" + totalNodes)
+                            .event(relaxMsg)
+                            .build();
+
                     frames.add(buildFrame(step++, edge.from(), settled,
                             List.of(edge.to()), settleOrder,
-                            parentMap, treeEdges, relaxMsg, dist, target));
+                            parentMap, treeEdges, relaxMsg, dist, target,
+                            List.of(), relaxTelemetry));
                 }
             }
 
             if (!anyUpdate) {
+                AlgorithmTelemetry convergeTelemetry = TelemetryBuilder.create("Converge")
+                        .metric("Pass", pass + "/" + (V - 1))
+                        .metric("Settled", settled.size() + "/" + totalNodes)
+                        .event("No updates in pass " + pass + " — converged early")
+                        .build();
+
                 frames.add(buildFrame(step++, null, settled, List.of(), settleOrder,
                         parentMap, treeEdges,
                         "Pass " + pass + ": No updates — converged early",
-                        dist, target));
+                        dist, target, List.of(), convergeTelemetry));
                 break;
             }
         }
@@ -122,12 +148,16 @@ public final class BellmanFordRunner {
         }
 
         if (negativeCycle) {
+            AlgorithmTelemetry ncTelemetry = TelemetryBuilder.create("Negative-Cycle")
+                    .metric("Settled", settled.size() + "/" + totalNodes)
+                    .event("Negative cycle detected — shortest paths undefined")
+                    .build();
+
             frames.add(buildFrame(step, null, settled, List.of(), settleOrder,
                     parentMap, treeEdges,
                     "Negative cycle detected — shortest paths are undefined",
-                    dist, target));
+                    dist, target, List.of(), ncTelemetry));
         } else {
-            // Build final path if target specified and reachable
             List<String> finalPath = List.of();
             if (target != null && dist.get(target) != INF) {
                 finalPath = reconstructPath(parentMap, source, target);
@@ -142,11 +172,19 @@ public final class BellmanFordRunner {
                         + " (" + finalPath.size() + " nodes)";
             } else {
                 finalMsg = "Bellman-Ford complete — settled " + settled.size()
-                        + " of " + graph.nodeCount() + " reachable nodes";
+                        + " of " + totalNodes + " reachable nodes";
             }
 
+            AlgorithmTelemetry completeTelemetry = TelemetryBuilder.create("Complete")
+                    .metric("Settled", settled.size() + "/" + totalNodes)
+                    .metric("No Negative Cycle", "true")
+                    .section("Settle Order", List.copyOf(settleOrder))
+                    .event("Bellman-Ford complete")
+                    .build();
+
             frames.add(buildFrame(step, null, settled, List.of(), settleOrder,
-                    parentMap, treeEdges, finalMsg, dist, target, finalPath));
+                    parentMap, treeEdges, finalMsg, dist, target, finalPath,
+                    completeTelemetry));
         }
 
         return Collections.unmodifiableList(frames);
@@ -179,22 +217,13 @@ public final class BellmanFordRunner {
             int stepIndex, String currentNode, Set<String> settled,
             List<String> frontier, List<String> settleOrder,
             Map<String, String> parentMap, Set<AlgorithmFrame.TraversalEdge> treeEdges,
-            String statusMessage, Map<String, Double> distances, String target) {
-        return buildFrame(stepIndex, currentNode, settled, frontier, settleOrder,
-                parentMap, treeEdges, statusMessage, distances, target, List.of());
-    }
-
-    private static AlgorithmFrame buildFrame(
-            int stepIndex, String currentNode, Set<String> settled,
-            List<String> frontier, List<String> settleOrder,
-            Map<String, String> parentMap, Set<AlgorithmFrame.TraversalEdge> treeEdges,
-            String statusMessage, Map<String, Double> distances,
-            String target, List<String> shortestPath) {
+            String statusMessage, Map<String, Double> distances, String target,
+            List<String> shortestPath, AlgorithmTelemetry telemetry) {
         return new AlgorithmFrame(
                 AlgorithmFrame.AlgorithmType.BELLMAN_FORD, stepIndex, currentNode,
                 Set.copyOf(settled), List.copyOf(frontier), List.copyOf(settleOrder),
                 Map.copyOf(parentMap), Set.copyOf(treeEdges), statusMessage, 0,
-                Map.copyOf(distances), target, List.copyOf(shortestPath), null);
+                Map.copyOf(distances), target, List.copyOf(shortestPath), telemetry);
     }
 
     static List<String> reconstructPath(Map<String, String> parentMap,

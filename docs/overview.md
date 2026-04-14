@@ -52,7 +52,7 @@ Application preferences.
 | Core structures | 7 families, 17 implementations |
 | Visual state panes | 14 family-specific panes + GraphVisualPane |
 | Compare workspace | Full side-by-side visual comparison |
-| Algorithm Lab | BFS/DFS simulation on configurable graphs |
+| Algorithm Lab | 11 algorithms with per-step telemetry and tracker pane |
 | Terminal simulator | Fully functional REPL mode |
 | GUI (JavaFX) | Six-page desktop shell |
 | Trace system | Before/after state, invariant checks, complexity |

@@ -74,13 +74,22 @@ public final class AStarRunner {
         openPQ.add(new double[]{hSource, nodeIndex.get(source)});
 
         int step = 0;
+        int totalNodes = nodes.size();
+
+        AlgorithmTelemetry initTelemetry = TelemetryBuilder.create("Initialization")
+                .metric("Source", source)
+                .metric("Target", target)
+                .metric("h(" + source + ")", DijkstraRunner.formatDist(hSource))
+                .section("Open Set", frontierWithF(openPQ, nodes, gScore, fScore))
+                .event("Source " + source + " added to open set")
+                .build();
 
         // Build initial distances map showing f-scores for display
         frames.add(buildFrame(step++, null, closed, frontierNodes(openPQ, nodes),
                 settleOrder, parentMap, treeEdges,
                 "A* started — source " + source + ", target " + target
                         + ", h(" + source + ")=" + DijkstraRunner.formatDist(hSource),
-                fScore, target));
+                fScore, target, List.of(), initTelemetry));
 
         while (!openPQ.isEmpty()) {
             double[] top = openPQ.poll();
@@ -102,24 +111,52 @@ public final class AStarRunner {
             // Check if target reached
             if (current.equals(target)) {
                 List<String> path = reconstructPath(parentMap, source, target);
+
+                AlgorithmTelemetry targetTelemetry = TelemetryBuilder.create("Target-Found")
+                        .metric("Distance", DijkstraRunner.formatDist(g))
+                        .metric("Path Length", path.size() + " nodes")
+                        .metric("Expanded", closed.size() + "/" + totalNodes)
+                        .section("Shortest Path", path)
+                        .event("Target " + target + " reached")
+                        .build();
+
                 frames.add(buildFrame(step++, current, closed, List.of(),
                         settleOrder, parentMap, treeEdges,
                         "Target " + target + " reached — shortest distance: "
                                 + DijkstraRunner.formatDist(g),
-                        gScore, target, path));
+                        gScore, target, path, targetTelemetry));
+
+                AlgorithmTelemetry completeTelemetry = TelemetryBuilder.create("Complete")
+                        .metric("Distance", DijkstraRunner.formatDist(g))
+                        .metric("Path Length", path.size() + " nodes")
+                        .metric("Expanded", closed.size() + "/" + totalNodes)
+                        .section("Shortest Path", path)
+                        .event("A* complete")
+                        .build();
 
                 frames.add(buildFrame(step, null, closed, List.of(),
                         settleOrder, parentMap, treeEdges,
                         "A* complete — shortest path to " + target + ": "
                                 + DijkstraRunner.formatDist(g)
                                 + " (" + path.size() + " nodes)",
-                        gScore, target, path));
+                        gScore, target, path, completeTelemetry));
                 return Collections.unmodifiableList(frames);
             }
 
+            AlgorithmTelemetry expandTelemetry = TelemetryBuilder.create("Expand")
+                    .metric("Node", current)
+                    .metric("g", DijkstraRunner.formatDist(g))
+                    .metric("h", DijkstraRunner.formatDist(h))
+                    .metric("f", DijkstraRunner.formatDist(f))
+                    .metric("Expanded", closed.size() + "/" + totalNodes)
+                    .section("Open Set", frontierWithF(openPQ, nodes, gScore, fScore))
+                    .event("Expanded " + current)
+                    .build();
+
             frames.add(buildFrame(step++, current, closed,
                     frontierNodes(openPQ, nodes),
-                    settleOrder, parentMap, treeEdges, expandMsg, gScore, target));
+                    settleOrder, parentMap, treeEdges, expandMsg, gScore, target,
+                    List.of(), expandTelemetry));
 
             // Relax neighbors
             for (String neighbor : graph.neighbors(current)) {
@@ -154,19 +191,36 @@ public final class AStarRunner {
                                 + ", f=" + DijkstraRunner.formatDist(newF);
                     }
 
+                    AlgorithmTelemetry relaxTelemetry = TelemetryBuilder.create(
+                            oldG == INF ? "Discover" : "Relax")
+                            .metric("Node", neighbor)
+                            .metric("g", DijkstraRunner.formatDist(tentativeG))
+                            .metric("h", DijkstraRunner.formatDist(hNeighbor))
+                            .metric("f", DijkstraRunner.formatDist(newF))
+                            .metric("Via", current)
+                            .section("Open Set", frontierWithF(openPQ, nodes, gScore, fScore))
+                            .event(relaxMsg)
+                            .build();
+
                     frames.add(buildFrame(step++, current, closed,
                             frontierNodes(openPQ, nodes),
                             settleOrder, parentMap, treeEdges, relaxMsg,
-                            gScore, target));
+                            gScore, target, List.of(), relaxTelemetry));
                 }
             }
         }
 
         // Target unreachable
+        AlgorithmTelemetry unreachTelemetry = TelemetryBuilder.create("Complete")
+                .metric("Expanded", closed.size() + "/" + totalNodes)
+                .metric("Target", target + " unreachable")
+                .event("A* exhausted open set — target unreachable")
+                .build();
+
         frames.add(buildFrame(step, null, closed, List.of(), settleOrder,
                 parentMap, treeEdges,
                 "A* complete — target " + target + " is unreachable from " + source,
-                gScore, target));
+                gScore, target, List.of(), unreachTelemetry));
 
         return Collections.unmodifiableList(frames);
     }
@@ -202,22 +256,13 @@ public final class AStarRunner {
             List<String> frontier, List<String> settleOrder,
             Map<String, String> parentMap, Set<AlgorithmFrame.TraversalEdge> treeEdges,
             String statusMessage, Map<String, Double> distances,
-            String target) {
-        return buildFrame(stepIndex, currentNode, closed, frontier, settleOrder,
-                parentMap, treeEdges, statusMessage, distances, target, List.of());
-    }
-
-    private static AlgorithmFrame buildFrame(
-            int stepIndex, String currentNode, Set<String> closed,
-            List<String> frontier, List<String> settleOrder,
-            Map<String, String> parentMap, Set<AlgorithmFrame.TraversalEdge> treeEdges,
-            String statusMessage, Map<String, Double> distances,
-            String target, List<String> shortestPath) {
+            String target, List<String> shortestPath,
+            AlgorithmTelemetry telemetry) {
         return new AlgorithmFrame(
                 AlgorithmFrame.AlgorithmType.A_STAR, stepIndex, currentNode,
                 Set.copyOf(closed), List.copyOf(frontier), List.copyOf(settleOrder),
                 Map.copyOf(parentMap), Set.copyOf(treeEdges), statusMessage, 0,
-                Map.copyOf(distances), target, List.copyOf(shortestPath), null);
+                Map.copyOf(distances), target, List.copyOf(shortestPath), telemetry);
     }
 
     private static List<String> frontierNodes(PriorityQueue<double[]> pq,
@@ -229,6 +274,23 @@ public final class AStarRunner {
             seen.add(nodes.get((int) entry[1]));
         }
         return List.copyOf(seen);
+    }
+
+    private static List<String> frontierWithF(PriorityQueue<double[]> pq,
+                                               List<String> nodes,
+                                               Map<String, Double> gScore,
+                                               Map<String, Double> fScore) {
+        List<String> result = new ArrayList<>();
+        PriorityQueue<double[]> copy = new PriorityQueue<>(pq);
+        Set<String> seen = new LinkedHashSet<>();
+        while (!copy.isEmpty()) {
+            String n = nodes.get((int) copy.poll()[1]);
+            if (seen.add(n)) {
+                result.add(n + " (g=" + DijkstraRunner.formatDist(gScore.getOrDefault(n, INF))
+                        + ", f=" + DijkstraRunner.formatDist(fScore.getOrDefault(n, INF)) + ")");
+            }
+        }
+        return result;
     }
 
     static List<String> reconstructPath(Map<String, String> parentMap,

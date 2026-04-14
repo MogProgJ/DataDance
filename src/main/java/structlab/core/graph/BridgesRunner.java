@@ -38,11 +38,18 @@ public final class BridgesRunner {
         Set<AlgorithmFrame.TraversalEdge> bridges = new LinkedHashSet<>();
         List<String> discoveryOrder = new ArrayList<>();
         int[] timer = {0};
+        int totalNodes = nodes.size();
+
+        AlgorithmTelemetry initTelemetry = TelemetryBuilder.create("Initialization")
+                .metric("Nodes", totalNodes)
+                .metric("Bridges Found", 0)
+                .event("Starting bridge detection via DFS")
+                .build();
 
         frames.add(buildFrame(step++, null, visited, List.of(), discoveryOrder,
                 parentMap, treeEdges,
                 "Bridge detection — DFS with discovery/low-link values",
-                buildDistances(disc, low), bridges));
+                buildDistances(disc, low), bridges, initTelemetry));
 
         for (String node : nodes) {
             if (!visited.contains(node)) {
@@ -55,9 +62,22 @@ public final class BridgesRunner {
                 ? "Bridge detection complete — no bridges found (graph is 2-edge-connected)"
                 : "Bridge detection complete — " + bridges.size() + " bridge"
                 + (bridges.size() != 1 ? "s" : "") + " found";
+
+        List<String> bridgeLabels = new ArrayList<>();
+        for (AlgorithmFrame.TraversalEdge b : bridges) {
+            bridgeLabels.add(b.from() + "—" + b.to());
+        }
+
+        AlgorithmTelemetry completeTelemetry = TelemetryBuilder.create("Complete")
+                .metric("Bridges", bridges.size())
+                .metric("Visited", visited.size() + "/" + totalNodes)
+                .section("Bridges Found", bridgeLabels)
+                .event("Bridge detection complete")
+                .build();
+
         frames.add(buildFrame(step, null, visited, List.of(), discoveryOrder,
                 parentMap, treeEdges, finalMsg,
-                buildDistances(disc, low), bridges));
+                buildDistances(disc, low), bridges, completeTelemetry));
 
         return Collections.unmodifiableList(frames);
     }
@@ -100,7 +120,13 @@ public final class BridgesRunner {
         frames.add(buildFrame(step++, start, visited, List.of(), discoveryOrder,
                 parentMap, treeEdges,
                 "Visiting " + start + " — disc=" + disc.get(start),
-                buildDistances(disc, low), bridges));
+                buildDistances(disc, low), bridges,
+                TelemetryBuilder.create("Visit")
+                        .metric("Node", start)
+                        .metric("disc", disc.get(start))
+                        .metric("low", low.get(start))
+                        .event("Visiting " + start)
+                        .build()));
 
         while (!stack.isEmpty()) {
             String[] top = stack.peek();
@@ -126,7 +152,14 @@ public final class BridgesRunner {
                             discoveryOrder, parentMap, treeEdges,
                             "Visiting " + v + " — disc=" + disc.get(v)
                                     + ", low=" + low.get(v),
-                            buildDistances(disc, low), bridges));
+                            buildDistances(disc, low), bridges,
+                            TelemetryBuilder.create("Visit")
+                                    .metric("Node", v)
+                                    .metric("disc", disc.get(v))
+                                    .metric("low", low.get(v))
+                                    .metric("Parent", u)
+                                    .event("Visiting " + v + " from " + u)
+                                    .build()));
 
                     stack.push(new String[]{v, u, "0"});
                 } else if (!v.equals(parent)) {
@@ -140,7 +173,12 @@ public final class BridgesRunner {
                                 "Back edge " + u + "-" + v
                                         + " — updated low[" + u + "]="
                                         + low.get(u),
-                                buildDistances(disc, low), bridges));
+                                buildDistances(disc, low), bridges,
+                                TelemetryBuilder.create("Back-Edge")
+                                        .metric("Edge", u + "—" + v)
+                                        .metric("low[" + u + "]", low.get(u))
+                                        .event("Back edge updated low[" + u + "]")
+                                        .build()));
                     }
                 }
             } else {
@@ -159,13 +197,25 @@ public final class BridgesRunner {
                                         + " (low[" + u + "]=" + low.get(u)
                                         + " > disc[" + parent + "]="
                                         + disc.get(parent) + ")",
-                                buildDistances(disc, low), bridges));
+                                buildDistances(disc, low), bridges,
+                                TelemetryBuilder.create("Bridge-Found")
+                                        .metric("Bridge", parent + "—" + u)
+                                        .metric("low[" + u + "]", low.get(u))
+                                        .metric("disc[" + parent + "]", disc.get(parent))
+                                        .metric("Total Bridges", bridges.size())
+                                        .event("Bridge " + parent + "—" + u + " found")
+                                        .build()));
                     } else if (low.get(parent) < oldLow) {
                         frames.add(buildFrame(step++, parent, visited, List.of(u),
                                 discoveryOrder, parentMap, treeEdges,
                                 "Backtrack — updated low[" + parent + "]="
                                         + low.get(parent),
-                                buildDistances(disc, low), bridges));
+                                buildDistances(disc, low), bridges,
+                                TelemetryBuilder.create("Backtrack")
+                                        .metric("Node", parent)
+                                        .metric("low[" + parent + "]", low.get(parent))
+                                        .event("Backtrack updated low[" + parent + "]")
+                                        .build()));
                     }
                 }
             }
@@ -193,8 +243,8 @@ public final class BridgesRunner {
             Map<String, String> parentMap,
             Set<AlgorithmFrame.TraversalEdge> treeEdges,
             String statusMessage, Map<String, Double> distances,
-            Set<AlgorithmFrame.TraversalEdge> bridges) {
-        // Encode bridges in shortestPath as flat list [from1, to1, from2, to2, ...]
+            Set<AlgorithmFrame.TraversalEdge> bridges,
+            AlgorithmTelemetry telemetry) {
         List<String> bridgeList = new ArrayList<>();
         for (AlgorithmFrame.TraversalEdge b : bridges) {
             bridgeList.add(b.from());
@@ -206,6 +256,6 @@ public final class BridgesRunner {
                 List.copyOf(discoveryOrder),
                 Map.copyOf(parentMap), Set.copyOf(treeEdges),
                 statusMessage, 0,
-                Map.copyOf(distances), null, List.copyOf(bridgeList), null);
+                Map.copyOf(distances), null, List.copyOf(bridgeList), telemetry);
     }
 }

@@ -41,24 +41,33 @@ public final class KruskalRunner {
         List<String> addOrder = new ArrayList<>();
         double totalWeight = 0.0;
         int step = 0;
+        int totalNodes = nodes.size();
 
         Map<String, Double> costMap = new LinkedHashMap<>();
         for (String n : nodes) {
             costMap.put(n, DijkstraRunner.INF);
         }
 
+        AlgorithmTelemetry initTelemetry = TelemetryBuilder.create("Initialization")
+                .metric("Edges", sorted.size())
+                .metric("Nodes", totalNodes)
+                .metric("MST Weight", "0")
+                .event("Sorted " + sorted.size() + " edges by weight")
+                .build();
+
         frames.add(buildFrame(step++, null, processed, List.of(), addOrder,
                 parentMap, mstEdges,
                 "Kruskal started — " + sorted.size() + " edges sorted by weight",
-                costMap, totalWeight));
+                costMap, totalWeight, initTelemetry));
 
+        int edgeCursor = 0;
         for (Graph.Edge edge : sorted) {
+            edgeCursor++;
             String from = edge.from();
             String to = edge.to();
             double w = edge.weight();
 
             if (uf.union(from, to)) {
-                // Edge accepted — no cycle
                 mstEdges.add(new AlgorithmFrame.TraversalEdge(from, to));
                 parentMap.put(to, from);
                 totalWeight += w;
@@ -71,26 +80,53 @@ public final class KruskalRunner {
                 costMap.put(from, 0.0);
                 costMap.put(to, 0.0);
 
+                AlgorithmTelemetry acceptTelemetry = TelemetryBuilder.create("Accept")
+                        .metric("Edge", from + " — " + to)
+                        .metric("Weight", DijkstraRunner.formatDist(w))
+                        .metric("MST Edges", mstEdges.size() + "/" + (totalNodes - 1))
+                        .metric("MST Weight", DijkstraRunner.formatDist(totalWeight))
+                        .metric("Components", uf.componentCount())
+                        .metric("Edge Cursor", edgeCursor + "/" + sorted.size())
+                        .section("MST Nodes", List.copyOf(addOrder))
+                        .event("Accepted " + from + "—" + to + " (no cycle)")
+                        .build();
+
                 frames.add(buildFrame(step++, from, processed,
                         List.of(to),
                         addOrder, parentMap, mstEdges,
                         "Accepted edge " + from + " — " + to
                                 + " (w=" + DijkstraRunner.formatDist(w)
                                 + ") — total " + DijkstraRunner.formatDist(totalWeight),
-                        costMap, totalWeight));
+                        costMap, totalWeight, acceptTelemetry));
             } else {
-                // Edge rejected — would form cycle
+                AlgorithmTelemetry rejectTelemetry = TelemetryBuilder.create("Reject")
+                        .metric("Edge", from + " — " + to)
+                        .metric("Weight", DijkstraRunner.formatDist(w))
+                        .metric("Reason", "Would form cycle")
+                        .metric("Edge Cursor", edgeCursor + "/" + sorted.size())
+                        .metric("Components", uf.componentCount())
+                        .event("Rejected " + from + "—" + to + " (cycle)")
+                        .build();
+
                 frames.add(buildFrame(step++, from, processed,
                         List.of(to),
                         addOrder, parentMap, mstEdges,
                         "Rejected edge " + from + " — " + to
                                 + " (w=" + DijkstraRunner.formatDist(w)
                                 + ") — would form cycle",
-                        costMap, totalWeight));
+                        costMap, totalWeight, rejectTelemetry));
             }
 
-            if (mstEdges.size() == nodes.size() - 1) break;
+            if (mstEdges.size() == totalNodes - 1) break;
         }
+
+        AlgorithmTelemetry completeTelemetry = TelemetryBuilder.create("Complete")
+                .metric("MST Weight", DijkstraRunner.formatDist(totalWeight))
+                .metric("MST Edges", mstEdges.size())
+                .metric("Components", uf.componentCount())
+                .section("MST Nodes", List.copyOf(addOrder))
+                .event("Kruskal complete")
+                .build();
 
         String finalMsg = "Kruskal complete — MST weight "
                 + DijkstraRunner.formatDist(totalWeight)
@@ -98,7 +134,8 @@ public final class KruskalRunner {
                 + uf.componentCount() + " component"
                 + (uf.componentCount() != 1 ? "s" : "") + ")";
         frames.add(buildFrame(step, null, processed, List.of(),
-                addOrder, parentMap, mstEdges, finalMsg, costMap, totalWeight));
+                addOrder, parentMap, mstEdges, finalMsg, costMap, totalWeight,
+                completeTelemetry));
 
         return Collections.unmodifiableList(frames);
     }
@@ -122,13 +159,13 @@ public final class KruskalRunner {
             Map<String, String> parentMap,
             Set<AlgorithmFrame.TraversalEdge> treeEdges,
             String statusMessage, Map<String, Double> costMap,
-            double totalWeight) {
+            double totalWeight, AlgorithmTelemetry telemetry) {
         Map<String, Double> distances = new LinkedHashMap<>(costMap);
         distances.put("__MST_TOTAL__", totalWeight);
         return new AlgorithmFrame(
                 AlgorithmFrame.AlgorithmType.KRUSKAL, stepIndex, currentNode,
                 Set.copyOf(processed), List.copyOf(frontier), List.copyOf(addOrder),
                 Map.copyOf(parentMap), Set.copyOf(treeEdges), statusMessage, 0,
-                Map.copyOf(distances), null, List.of(), null);
+                Map.copyOf(distances), null, List.of(), telemetry);
     }
 }

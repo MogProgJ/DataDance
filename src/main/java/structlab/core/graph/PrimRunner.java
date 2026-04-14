@@ -56,11 +56,19 @@ public final class PrimRunner {
         pq.add(new double[]{0.0, nodeIndex.get(source)});
 
         int step = 0;
+        int totalNodes = graph.nodeCount();
+
+        AlgorithmTelemetry initTelemetry = TelemetryBuilder.create("Initialization")
+                .metric("In MST", "0/" + totalNodes)
+                .metric("MST Weight", "0")
+                .section("Frontier (PQ)", frontierWithCosts(pq, nodes, bestCost))
+                .event("Source " + source + " added to PQ with key 0")
+                .build();
 
         frames.add(buildFrame(step++, null, inMST, frontierLabels(pq, nodes),
                 addOrder, parentMap, treeEdges,
                 "Prim started — growing MST from " + source,
-                bestCost, totalWeight));
+                bestCost, totalWeight, initTelemetry));
 
         while (!pq.isEmpty()) {
             double[] top = pq.poll();
@@ -83,18 +91,41 @@ public final class PrimRunner {
                     + (cost > 0 ? " — edge cost " + DijkstraRunner.formatDist(cost) : "")
                     + " — total " + DijkstraRunner.formatDist(totalWeight);
 
+            AlgorithmTelemetry addTelemetry = TelemetryBuilder.create("Extract-Min")
+                    .metric("Extracted", current)
+                    .metric("Edge Cost", DijkstraRunner.formatDist(cost))
+                    .metric("In MST", inMST.size() + "/" + totalNodes)
+                    .metric("MST Weight", DijkstraRunner.formatDist(totalWeight))
+                    .section("Frontier (PQ)", frontierWithCosts(pq, nodes, bestCost))
+                    .section("MST Nodes", List.copyOf(addOrder))
+                    .event("Added " + current + " to MST")
+                    .build();
+
             frames.add(buildFrame(step++, current, inMST,
                     frontierLabels(pq, nodes),
-                    addOrder, parentMap, treeEdges, msg, bestCost, totalWeight));
+                    addOrder, parentMap, treeEdges, msg, bestCost, totalWeight,
+                    addTelemetry));
 
             // Relax neighbors
             for (String neighbor : graph.neighbors(current)) {
                 if (inMST.contains(neighbor)) continue;
                 double edgeW = graph.edgeWeight(current, neighbor).orElse(1.0);
                 if (edgeW < bestCost.get(neighbor)) {
+                    double oldKey = bestCost.get(neighbor);
                     bestCost.put(neighbor, edgeW);
                     parentMap.put(neighbor, current);
                     pq.add(new double[]{edgeW, nodeIndex.get(neighbor)});
+
+                    AlgorithmTelemetry keyTelemetry = TelemetryBuilder.create("Key-Update")
+                            .metric("Node", neighbor)
+                            .metric("Old Key", DijkstraRunner.formatDist(oldKey))
+                            .metric("New Key", DijkstraRunner.formatDist(edgeW))
+                            .metric("Via", current)
+                            .section("Frontier (PQ)", frontierWithCosts(pq, nodes, bestCost))
+                            .event("Decreased key of " + neighbor + " from "
+                                    + DijkstraRunner.formatDist(oldKey) + " to "
+                                    + DijkstraRunner.formatDist(edgeW))
+                            .build();
 
                     frames.add(buildFrame(step++, current, inMST,
                             frontierLabels(pq, nodes),
@@ -102,17 +133,26 @@ public final class PrimRunner {
                             "Updated key of " + neighbor + " to "
                                     + DijkstraRunner.formatDist(edgeW)
                                     + " via " + current,
-                            bestCost, totalWeight));
+                            bestCost, totalWeight, keyTelemetry));
                 }
             }
         }
 
+        AlgorithmTelemetry completeTelemetry = TelemetryBuilder.create("Complete")
+                .metric("In MST", inMST.size() + "/" + totalNodes)
+                .metric("MST Weight", DijkstraRunner.formatDist(totalWeight))
+                .metric("MST Edges", treeEdges.size())
+                .section("MST Nodes", List.copyOf(addOrder))
+                .event("Prim complete")
+                .build();
+
         String finalMsg = "Prim complete — MST weight "
                 + DijkstraRunner.formatDist(totalWeight)
                 + " (" + treeEdges.size() + " edges, "
-                + inMST.size() + " of " + graph.nodeCount() + " nodes)";
+                + inMST.size() + " of " + totalNodes + " nodes)";
         frames.add(buildFrame(step, null, inMST, List.of(),
-                addOrder, parentMap, treeEdges, finalMsg, bestCost, totalWeight));
+                addOrder, parentMap, treeEdges, finalMsg, bestCost, totalWeight,
+                completeTelemetry));
 
         return Collections.unmodifiableList(frames);
     }
@@ -136,15 +176,14 @@ public final class PrimRunner {
             Map<String, String> parentMap,
             Set<AlgorithmFrame.TraversalEdge> treeEdges,
             String statusMessage, Map<String, Double> bestCost,
-            double totalWeight) {
-        // Store totalWeight in distances map under a sentinel key "__MST__"
+            double totalWeight, AlgorithmTelemetry telemetry) {
         Map<String, Double> distances = new LinkedHashMap<>(bestCost);
         distances.put("__MST_TOTAL__", totalWeight);
         return new AlgorithmFrame(
                 AlgorithmFrame.AlgorithmType.PRIM, stepIndex, currentNode,
                 Set.copyOf(inMST), List.copyOf(frontier), List.copyOf(addOrder),
                 Map.copyOf(parentMap), Set.copyOf(treeEdges), statusMessage, 0,
-                Map.copyOf(distances), null, List.of(), null);
+                Map.copyOf(distances), null, List.of(), telemetry);
     }
 
     private static List<String> frontierLabels(PriorityQueue<double[]> pq,
@@ -155,5 +194,20 @@ public final class PrimRunner {
             seen.add(nodes.get((int) copy.poll()[1]));
         }
         return List.copyOf(seen);
+    }
+
+    private static List<String> frontierWithCosts(PriorityQueue<double[]> pq,
+                                                   List<String> nodes,
+                                                   Map<String, Double> bestCost) {
+        List<String> result = new ArrayList<>();
+        PriorityQueue<double[]> copy = new PriorityQueue<>(pq);
+        Set<String> seen = new LinkedHashSet<>();
+        while (!copy.isEmpty()) {
+            String n = nodes.get((int) copy.poll()[1]);
+            if (seen.add(n)) {
+                result.add(n + " (key=" + DijkstraRunner.formatDist(bestCost.getOrDefault(n, DijkstraRunner.INF)) + ")");
+            }
+        }
+        return result;
     }
 }

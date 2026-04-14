@@ -41,6 +41,7 @@ public final class DijkstraRunner {
         Map<String, String> parentMap = new LinkedHashMap<>();
         Set<AlgorithmFrame.TraversalEdge> treeEdges = new LinkedHashSet<>();
         List<String> settleOrder = new ArrayList<>();
+        int totalNodes = graph.nodeCount();
 
         // Priority queue: (distance, node)
         PriorityQueue<double[]> pq = new PriorityQueue<>(
@@ -61,10 +62,18 @@ public final class DijkstraRunner {
         int step = 0;
 
         // Initial frame
+        AlgorithmTelemetry initTelemetry = TelemetryBuilder.create("Initialization")
+                .metric("Settled", "0/" + totalNodes)
+                .metric("Source", source)
+                .metric("Target", target != null ? target : "—")
+                .section("Frontier (PQ)", frontierWithDists(pq, nodeIndex, nodes, dist))
+                .event("Source " + source + " enqueued with distance 0")
+                .build();
+
         frames.add(buildFrame(step++, null, settled, frontierNodes(pq, nodeIndex, nodes),
                 settleOrder, parentMap, treeEdges,
                 "Dijkstra started — source " + source + " with distance 0",
-                dist, target));
+                dist, target, List.of(), initTelemetry));
 
         while (!pq.isEmpty()) {
             double[] top = pq.poll();
@@ -86,28 +95,52 @@ public final class DijkstraRunner {
             List<String> path = current.equals(target)
                     ? reconstructPath(parentMap, source, target) : List.of();
 
+            TelemetryBuilder extractTB = TelemetryBuilder.create("Extract-Min")
+                    .metric("Extracted", current)
+                    .metric("Distance", d)
+                    .metric("Settled", settled.size() + "/" + totalNodes)
+                    .section("Frontier (PQ)", frontierWithDists(pq, nodeIndex, nodes, dist))
+                    .event("Extracted " + current + " (d=" + formatDist(d) + ")");
+            if (target != null) {
+                extractTB.metric("Target", settled.contains(target)
+                        ? target + " SETTLED" : target + " (d=" + formatDist(dist.get(target)) + ")");
+            }
+
             frames.add(buildFrame(step++, current, settled, frontierNodes(pq, nodeIndex, nodes),
-                    settleOrder, parentMap, treeEdges, settleMsg, dist, target, path));
+                    settleOrder, parentMap, treeEdges, settleMsg, dist, target, path,
+                    extractTB.build()));
 
             // Early termination if target settled
             if (target != null && current.equals(target)) {
+                AlgorithmTelemetry completeTelemetry = TelemetryBuilder.create("Complete")
+                        .metric("Shortest Distance", d)
+                        .metric("Path Length", path.size() + " nodes")
+                        .metric("Settled", settled.size() + "/" + totalNodes)
+                        .section("Shortest Path", path)
+                        .event("Target " + target + " settled — done")
+                        .build();
+
                 frames.add(buildFrame(step, null, settled, List.of(),
                         settleOrder, parentMap, treeEdges,
                         "Dijkstra complete — shortest path to " + target + ": " + formatDist(d)
                                 + " (" + path.size() + " nodes)",
-                        dist, target, path));
+                        dist, target, path, completeTelemetry));
                 return Collections.unmodifiableList(frames);
             }
 
             // Relax neighbors
+            int relaxAttempted = 0;
+            int relaxAccepted = 0;
             for (String neighbor : graph.neighbors(current)) {
                 if (settled.contains(neighbor)) continue;
 
                 double edgeWeight = graph.edgeWeight(current, neighbor).orElse(1.0);
                 double newDist = d + edgeWeight;
                 double oldDist = dist.get(neighbor);
+                relaxAttempted++;
 
                 if (newDist < oldDist) {
+                    relaxAccepted++;
                     double prevDist = oldDist;
                     dist.put(neighbor, newDist);
                     parentMap.put(neighbor, current);
@@ -119,25 +152,39 @@ public final class DijkstraRunner {
                     pq.add(new double[]{newDist, nodeIndex.get(neighbor)});
 
                     String relaxMsg;
+                    String eventMsg;
                     if (prevDist == INF) {
                         relaxMsg = "Discovered " + neighbor + " via " + current
                                 + " — distance " + formatDist(newDist);
+                        eventMsg = "Discovered " + neighbor + ": ∞ → " + formatDist(newDist);
                     } else {
                         relaxMsg = "Relaxed " + neighbor + " via " + current
                                 + " — distance " + formatDist(prevDist)
                                 + " → " + formatDist(newDist);
+                        eventMsg = "Relaxed " + neighbor + ": "
+                                + formatDist(prevDist) + " → " + formatDist(newDist);
                     }
+
+                    AlgorithmTelemetry relaxTelemetry = TelemetryBuilder.create("Relax")
+                            .metric("From", current)
+                            .metric("Edge", current + " → " + neighbor + " (w=" + formatDist(edgeWeight) + ")")
+                            .metric("Settled", settled.size() + "/" + totalNodes)
+                            .metric("Relaxations", relaxAccepted + " accepted / " + relaxAttempted + " tried")
+                            .section("Frontier (PQ)", frontierWithDists(pq, nodeIndex, nodes, dist))
+                            .event(eventMsg)
+                            .build();
 
                     frames.add(buildFrame(step++, current, settled,
                             frontierNodes(pq, nodeIndex, nodes),
-                            settleOrder, parentMap, treeEdges, relaxMsg, dist, target));
+                            settleOrder, parentMap, treeEdges, relaxMsg, dist, target,
+                            List.of(), relaxTelemetry));
                 }
             }
         }
 
         // Final frame: all reachable nodes settled
         String finalMsg = "Dijkstra complete — settled " + settled.size()
-                + " of " + graph.nodeCount() + " nodes";
+                + " of " + totalNodes + " nodes";
         if (target != null && !settled.contains(target)) {
             finalMsg = "Dijkstra complete — target " + target + " is unreachable from " + source;
         }
@@ -145,8 +192,19 @@ public final class DijkstraRunner {
         List<String> finalPath = (target != null && settled.contains(target))
                 ? reconstructPath(parentMap, source, target) : List.of();
 
+        TelemetryBuilder finalTB = TelemetryBuilder.create("Complete")
+                .metric("Settled", settled.size() + "/" + totalNodes);
+        if (target != null && settled.contains(target)) {
+            finalTB.metric("Shortest Distance", dist.get(target))
+                    .section("Shortest Path", finalPath);
+        } else if (target != null) {
+            finalTB.metric("Target", target + " UNREACHABLE");
+        }
+        finalTB.event("Algorithm complete");
+
         frames.add(buildFrame(step, null, settled, List.of(), settleOrder,
-                parentMap, treeEdges, finalMsg, dist, target, finalPath));
+                parentMap, treeEdges, finalMsg, dist, target, finalPath,
+                finalTB.build()));
 
         return Collections.unmodifiableList(frames);
     }
@@ -175,7 +233,7 @@ public final class DijkstraRunner {
             Map<String, String> parentMap, Set<AlgorithmFrame.TraversalEdge> treeEdges,
             String statusMessage, Map<String, Double> distances, String target) {
         return buildFrame(stepIndex, currentNode, settled, frontier, settleOrder,
-                parentMap, treeEdges, statusMessage, distances, target, List.of());
+                parentMap, treeEdges, statusMessage, distances, target, List.of(), null);
     }
 
     private static AlgorithmFrame buildFrame(
@@ -183,12 +241,13 @@ public final class DijkstraRunner {
             List<String> frontier, List<String> settleOrder,
             Map<String, String> parentMap, Set<AlgorithmFrame.TraversalEdge> treeEdges,
             String statusMessage, Map<String, Double> distances,
-            String target, List<String> shortestPath) {
+            String target, List<String> shortestPath,
+            AlgorithmTelemetry telemetry) {
         return new AlgorithmFrame(
                 AlgorithmFrame.AlgorithmType.DIJKSTRA, stepIndex, currentNode,
                 Set.copyOf(settled), List.copyOf(frontier), List.copyOf(settleOrder),
                 Map.copyOf(parentMap), Set.copyOf(treeEdges), statusMessage, 0,
-                Map.copyOf(distances), target, List.copyOf(shortestPath), null);
+                Map.copyOf(distances), target, List.copyOf(shortestPath), telemetry);
     }
 
     /** Returns labels of nodes currently in the priority queue (unsettled, finite distance). */
@@ -204,6 +263,23 @@ public final class DijkstraRunner {
             seen.add(label);
         }
         return List.copyOf(seen);
+    }
+
+    /** Returns frontier entries with tentative distances for telemetry sections. */
+    private static List<String> frontierWithDists(
+            PriorityQueue<double[]> pq, Map<String, Integer> nodeIndex,
+            List<String> nodes, Map<String, Double> dist) {
+        List<String> result = new ArrayList<>();
+        PriorityQueue<double[]> copy = new PriorityQueue<>(pq);
+        Set<String> seen = new LinkedHashSet<>();
+        while (!copy.isEmpty()) {
+            double[] entry = copy.poll();
+            String label = nodes.get((int) entry[1]);
+            if (seen.add(label)) {
+                result.add(label + " (d=" + formatDist(dist.getOrDefault(label, INF)) + ")");
+            }
+        }
+        return result;
     }
 
     /** Reconstructs the shortest path from source to target using the parent map. */

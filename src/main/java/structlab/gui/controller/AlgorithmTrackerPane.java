@@ -25,8 +25,14 @@ public class AlgorithmTrackerPane extends VBox {
     private final VBox metricsBox;
     private final VBox sectionsBox;
     private final VBox eventsBox;
+    private boolean defaultExpanded;
 
     public AlgorithmTrackerPane() {
+        this(false);
+    }
+
+    public AlgorithmTrackerPane(boolean defaultExpanded) {
+        this.defaultExpanded = defaultExpanded;
         setSpacing(6);
         getStyleClass().add("algo-tracker-pane");
         setPadding(new Insets(8, 0, 8, 0));
@@ -92,7 +98,7 @@ public class AlgorithmTrackerPane extends VBox {
                         styledLabel(item, "algo-tracker-item"));
             }
             TitledPane tp = new TitledPane(s.title(), sectionContent);
-            tp.setExpanded(false);
+            tp.setExpanded(defaultExpanded);
             tp.getStyleClass().add("algo-tracker-section-pane");
             sectionsBox.getChildren().add(tp);
         }
@@ -125,7 +131,7 @@ public class AlgorithmTrackerPane extends VBox {
                     String.join(" \u2192 ", frame.discoveryOrder()),
                     "algo-tracker-item"));
             TitledPane tp = new TitledPane("Discovery Order", discContent);
-            tp.setExpanded(false);
+            tp.setExpanded(defaultExpanded);
             tp.getStyleClass().add("algo-tracker-section-pane");
             sectionsBox.getChildren().add(tp);
         }

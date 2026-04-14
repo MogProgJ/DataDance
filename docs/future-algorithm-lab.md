@@ -1,9 +1,11 @@
 # Future: Algorithm Lab
 
-> Status: **partially implemented** — BFS and DFS are working in the
-> Algorithm Lab GUI page with Graph.java, playback controls, and
-> GraphVisualPane.  Dijkstra and later waves remain planned.  This
-> document captures the full product vision.
+> Status: **implemented** — All 11 graph algorithms are working in the
+> Algorithm Lab GUI page with Graph.java, playback controls,
+> GraphVisualPane, compare mode, and scenario save/load.
+> Per-step telemetry (AlgorithmTelemetry) is emitted by every runner
+> and displayed in the AlgorithmTrackerPane sidebar widget.
+> This document captures the full product vision and remaining ideas.
 
 ---
 

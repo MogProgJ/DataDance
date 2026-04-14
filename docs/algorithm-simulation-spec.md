@@ -191,7 +191,43 @@ public record GraphStateModel(
 
 ---
 
-## 7. Non-goals (for first wave)
+## 7. Per-step telemetry
+
+Every `AlgorithmFrame` carries an `AlgorithmTelemetry` record as its
+14th field, built via `TelemetryBuilder`.  The telemetry record contains:
+
+| Component | Type | Purpose |
+|---|---|---|
+| **phase** | `String` | Semantic label for the current step (e.g. `Initialization`, `Extract-Min`, `Relax`, `Complete`). |
+| **metrics** | `List<Metric>` | Key-value pairs (e.g. `Node = B`, `Distance = 5`, `MST Weight = 12`). |
+| **sections** | `List<Section>` | Titled item lists (e.g. `Priority Queue: [A(3), B(7)]`). |
+| **events** | `List<String>` | Human-readable descriptions of what happened this step. |
+
+### 7.1 Phase labels by algorithm
+
+| Algorithm | Phases |
+|---|---|
+| BFS | Initialization, Dequeue, Discover, Complete |
+| DFS | Initialization, Backtrack, Visit, Push, Complete |
+| Dijkstra | Initialization, Extract-Min, Relax, Complete |
+| Bellman-Ford | Initialization, Relax, Converge, Negative-Cycle, Complete |
+| A* | Initialization, Expand, Discover, Relax, Target-Found, Complete |
+| Prim | Initialization, Extract-Min, Key-Update, Complete |
+| Kruskal | Initialization, Accept, Reject, Complete |
+| Topo Sort | Initialization, Emit, Indegree-Update, Cycle-Detected, Complete |
+| SCC | Initialization, Pass1-Visit, Pass1-Complete, Pass2-Start, Pass2-Visit, SCC-Found, Complete |
+| Bridges | Initialization, Visit, Back-Edge, Bridge-Found, Backtrack, Complete |
+| Art. Points | Initialization, Visit, Back-Edge, AP-Found, Backtrack, Complete |
+
+### 7.2 Tracker pane
+
+`AlgorithmTrackerPane` (left sidebar widget) renders the telemetry in a
+structured two-section layout: **Metrics** and **Detail**.  Default
+expansion state is configurable via `AppSettings.trackerExpanded`.
+
+---
+
+## 8. Non-goals (for first wave)
 
 - Animated edge traversal (smooth node-to-node movement) — step-based
   highlighting is sufficient initially.
